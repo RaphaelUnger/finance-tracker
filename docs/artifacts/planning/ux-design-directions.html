@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>UX Design Directions — Finance Tracker</title>
+    <style>
+        body {
+            font-family: Inter, ui-sans-serif, system-ui, Roboto, Arial;
+            margin: 0;
+            padding: 24px;
+            background: #f6f7fb;
+            color: #0b1220
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 6px 18px rgba(10, 10, 20, .06)
+        }
+
+        .mock {
+            height: 220px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #eef2ff, #fff7ed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #111
+        }
+
+        .meta {
+            margin-top: 10px
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: #0b6e4f;
+            color: #fff;
+            border: none;
+            cursor: pointer
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Design Directions — Finance Tracker (6 options)</h1>
+    <p>Click "Open Preview" on any direction to open a full-screen mockup preview.</p>
+    <div class='grid'>
+
+        <div class='card'>
+            <div class='mock'>Minimal — Quick Add Focus</div>
+            <div class='meta'><strong>Rationale:</strong> Lowest friction. Large FAB and spacious list. Good for casual
+                users.</div>
+            <button class='btn' data-dir='minimal'>Open Preview</button>
+        </div>
+
+        <div class='card'>
+            <div class='mock'>Card-focused — Receipt Thumbs</div>
+            <div class='meta'><strong>Rationale:</strong> Emphasizes receipts and visual cues. Good for users keeping
+                photo records.</div>
+            <button class='btn' data-dir='card'>Open Preview</button>
+        </div>
+
+        <div class='card'>
+            <div class='mock'>Dashboard-first — Charts Upfront</div>
+            <div class='meta'><strong>Rationale:</strong> For users who check reports frequently. Quick glance
+                summaries.</div>
+            <button class='btn' data-dir='dashboard'>Open Preview</button>
+        </div>
+
+        <div class='card'>
+            <div class='mock'>List-first Compact — Power Users</div>
+            <div class='meta'><strong>Rationale:</strong> Dense lists and swipe actions. Optimized for fast edits.</div>
+            <button class='btn' data-dir='list'>Open Preview</button>
+        </div>
+
+        <div class='card'>
+            <div class='mock'>Visual-centric — Reports First</div>
+            <div class='meta'><strong>Rationale:</strong> Rich visual charts and timeline. Best for analytic users.
+            </div>
+            <button class='btn' data-dir='visual'>Open Preview</button>
+        </div>
+
+        <div class='card'>
+            <div class='mock'>Compact Privacy-first — Subtle Security Cues</div>
+            <div class='meta'><strong>Rationale:</strong> Subtle privacy indicators, encryption status. Builds trust
+                with visual cues.</div>
+            <button class='btn' data-dir='privacy'>Open Preview</button>
+        </div>
+
+    </div>
+
+    <script>
+        const templates = {
+            minimal: `<!doctype html><html><head><meta charset='utf-8'><meta name=viewport content='width=device-width,initial-scale=1'><title>Minimal — Preview</title><style>body{font-family:system-ui;padding:0;margin:0;background:#fff} .top{padding:24px;background:#0b6e4f;color:#fff} .fab{position:fixed;right:20px;bottom:20px;background:#ff8a65;padding:14px;border-radius:999px;color:#000;font-weight:700;border:none}</style></head><body><div class='top'><h1>Finance Tracker</h1><p>Balance — $1,234.56</p></div><main style='padding:24px'><ul style='list-style:none;padding:0;margin:0'><li style='padding:12px;border-bottom:1px solid #eee'>Groceries — $23.42</li><li style='padding:12px;border-bottom:1px solid #eee'>Transport — $4.50</li></ul></main><button class='fab'>+ Add</button></body></html>`,
+            card: `<!doctype html><html><head><meta charset='utf-8'><meta name=viewport content='width=device-width,initial-scale=1'><title>Card-focused — Preview</title><style>body{font-family:system-ui;padding:0;margin:0;background:#fff} .top{padding:18px;background:#111827;color:#fff} .card{padding:14px;margin:14px;border-radius:12px;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.06)}</style></head><body><div class='top'><h2>Recent</h2></div><main style='padding:18px'><div class='card'><strong>Shop</strong><p>$42.00 • Food</p></div><div class='card'><strong>Cafe</strong><p>$6.75 • Food</p></div></main></body></html>`,
+            dashboard: `<!doctype html><html><head><meta charset='utf-8'><meta name=viewport content='width=device-width,initial-scale=1'><title>Dashboard — Preview</title><style>body{font-family:system-ui;padding:0;margin:0;background:#fff} .grid{display:flex;gap:12px;padding:18px}</style></head><body><div style='background:#0b6e4f;color:#fff;padding:18px'><h2>Summary</h2></div><div class='grid'><div style='flex:1;padding:18px'>[Pie Chart]</div><div style='flex:1;padding:18px'>[Bar Chart]</div></div></body></html>`,
+            list: `<!doctype html><html><head><meta charset='utf-8'><meta name=viewport content='width=device-width,initial-scale=1'><title>List-first — Preview</title><style>body{font-family:system-ui;padding:0;margin:0;background:#fff} ul{padding:18px;margin:0} li{padding:10px;border-bottom:1px solid #eee}</style></head><body><ul><li>Rent — $800.00</li><li>Groceries — $45.20</li><li>Transport — $12.00</li></ul></body></html>`,
+            visual: `<!doctype html><html><head><meta charset='utf-8'><meta name=viewport content='width=device-width,initial-scale=1'><title>Visual — Preview</title><style>body{font-family:system-ui;padding:0;margin:0;background:#fff} .hero{padding:24px;text-align:center}</style></head><body><div class='hero'><h1>Monthly Overview</h1><div style='height:220px;background:linear-gradient(90deg,#eef2ff,#fff7ed);border-radius:12px;display:flex;align-items:center;justify-content:center'>[Chart]</div></div></body></html>`,
+            privacy: `<!doctype html><html><head><meta charset='utf-8'><meta name=viewport content='width=device-width,initial-scale=1'><title>Privacy — Preview</title><style>body{font-family:system-ui;padding:0;margin:0;background:#fff} .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#0b6e4f;margin:12px}</style></head><body><div style='padding:18px'><h2>Encryption: Enabled</h2><div class='badge'>Local-only storage</div></div></body></html>`
+        };
+
+        document.addEventListener('click', e => {
+            const btn = e.target.closest('button[data-dir]'); if (!btn) return; const d = btn.dataset.dir; const html = templates[d]; const w = window.open(); w.document.write(html); w.document.close();
+        });
+    </script>
+</body>
+
+</html>

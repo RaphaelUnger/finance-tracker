@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & Test (auto-detect)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (for Node/TS projects)
+        uses: actions/setup-node@v4
+        with:
+          # uses .nvmrc if present, otherwise falls back to 18
+          node-version: '18'
+
+      - name: Install dependencies and run lint/test if present
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Looking for package.json..."
+          if [ -f package.json ]; then
+            echo "package.json found — treating as a Node project"
+            npm ci
+
+            # Run lint if a lint script exists
+            if node -e "const p=require('./package.json'); process.exit(!(p.scripts && p.scripts.lint));"; then
+              echo "Running npm run lint"
+              npm run lint
+            else
+              echo "No lint script found"
+            fi
+
+            # Run tests if a test script exists
+            if node -e "const p=require('./package.json'); process.exit(!(p.scripts && p.scripts.test));"; then
+              echo "Running npm test"
+              npm test
+            else
+              echo "No test script found"
+            fi
+          else
+            echo "No package.json — skipping Node install/lint/test steps"
+          fi
+
+      - name: TypeScript check (if tsconfig.json present)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f tsconfig.json ]; then
+            echo "tsconfig.json found — running tsc --noEmit"
+            # install typescript if not present
+            if ! command -v tsc >/dev/null 2>&1; then
+              echo "tsc not found globally — installing typescript temporarily"
+              npm i --no-save typescript@latest
+            fi
+            npx tsc --noEmit
+          else
+            echo "No tsconfig.json — skipping TypeScript compile check"
+          fi
+
+      - name: Upload test artifacts (if any and on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-artifacts
+          path: |
+            test-results/
+            playwright-report/
+            coverage/
+          retention-days: 7

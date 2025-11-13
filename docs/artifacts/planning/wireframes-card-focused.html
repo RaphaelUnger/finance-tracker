@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Wireframes — Card-Focused Direction (Finance Tracker)</title>
+    <style>
+        :root {
+            --bg: #f4f5f7;
+            --card: #ffffff;
+            --muted: #9aa3b2;
+            --accent: #0b6e4f
+        }
+
+        body {
+            font-family: Inter, system-ui, Arial;
+            background: var(--bg);
+            margin: 0;
+            color: #0b1220
+        }
+
+        header {
+            background: #fff;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #e6e9ee
+        }
+
+        header h1 {
+            font-size: 18px;
+            margin: 0
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 980px;
+            margin: 0 auto
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px
+        }
+
+        button.btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer
+        }
+
+        .seg {
+            display: inline-flex;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e6e9ee
+        }
+
+        .seg button {
+            border: 0;
+            background: transparent;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: var(--muted)
+        }
+
+        .seg button.active {
+            background: linear-gradient(180deg, #f1faf3, #e6f6ea);
+            color: var(--accent);
+            font-weight: 600
+        }
+
+        /* Wireframe cards */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 8px 20px rgba(11, 17, 32, 0.04);
+            border: 1px dashed #e6e9ee
+        }
+
+        .card .title {
+            font-weight: 700;
+            margin-bottom: 8px
+        }
+
+        .card .meta {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 10px
+        }
+
+        .thumb {
+            height: 56px;
+            width: 56px;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #eef2ff, #fff7ed);
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px
+        }
+
+        .row {
+            display: flex;
+            align-items: center
+        }
+
+        .amount {
+            margin-left: auto;
+            font-weight: 700
+        }
+
+        /* List / compact */
+        .list {
+            background: transparent
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f6
+        }
+
+        .chip {
+            background: #f6faf8;
+            color: var(--accent);
+            padding: 6px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            margin-left: 8px
+        }
+
+        /* Overlays */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 20px;
+            pointer-events: none
+        }
+
+        .sheet {
+            width: 100%;
+            max-width: 680px;
+            border-radius: 12px;
+            background: #fff;
+            padding: 16px;
+            box-shadow: 0 20px 60px rgba(11, 17, 32, 0.18);
+            pointer-events: auto;
+            border: 1px solid #e8eef5
+        }
+
+        .sheet h3 {
+            margin: 0 0 10px 0
+        }
+
+        .field {
+            margin-bottom: 8px
+        }
+
+        .field input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e6e9ee
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px
+        }
+
+        .ghost {
+            background: #f3f5f7;
+            color: #556;
+            border: 1px solid #e6e9ee
+        }
+
+        /* Notes */
+        .note {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 8px
+        }
+
+        .kbd {
+            background: #111827;
+            color: #fff;
+            padding: 4px 6px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-left: 6px
+        }
+
+        footer {
+            padding: 12px 20px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        /* Responsive */
+        @media(min-width:900px) {
+            .overlay {
+                align-items: center
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="24" height="24" rx="6" fill="#0B6E4F" />
+            <path d="M7 13h10M7 9h10M7 17h6" stroke="#fff" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg>
+        <h1>Finance Tracker — Card-Focused Wireframes</h1>
+    </header>
+
+    <div class="container">
+        <div class="toolbar">
+            <div class="seg" role="tablist" aria-label="screens">
+                <button class="tab active" data-screen="home">Home</button>
+                <button class="tab" data-screen="scan">Scan & Confirm</button>
+                <button class="tab" data-screen="detail">Transaction</button>
+                <button class="tab" data-screen="reports">Reports</button>
+            </div>
+            <div style="flex:1"></div>
+            <button id="open-fab" class="btn">+ Add</button>
+        </div>
+
+        <main id="screens">
+            <!-- Home - Card list -->
+            <section data-screen="home">
+                <div class="grid">
+                    <article class="card">
+                        <div class="row">
+                            <div class="thumb" aria-hidden></div>
+                            <div>
+                                <div class="title">Groceries — SuperMart</div>
+                                <div class="meta">Nov 12 • Receipt attached <span class="chip">Food</span></div>
+                            </div>
+                            <div class="amount">$23.42</div>
+                        </div>
+                        <div class="note">Tap to open details. Swipe left to edit/delete.</div>
+                    </article>
+
+                    <article class="card">
+                        <div class="row">
+                            <div class="thumb" aria-hidden style="background:linear-gradient(90deg,#fff7ed,#fff1f0)">
+                            </div>
+                            <div>
+                                <div class="title">Coffee — Cafe Luna</div>
+                                <div class="meta">Nov 13 • Quick add</div>
+                            </div>
+                            <div class="amount">$4.50</div>
+                        </div>
+                        <div class="note">Recent transactions are shown as cards with category chips.</div>
+                    </article>
+
+                    <article class="card">
+                        <div class="row">
+                            <div class="thumb" aria-hidden style="background:linear-gradient(90deg,#eef7ff,#eef2ff)">
+                            </div>
+                            <div>
+                                <div class="title">Bus Pass — Transit Co</div>
+                                <div class="meta">Nov 01 • Recurring</div>
+                            </div>
+                            <div class="amount">$30.00</div>
+                        </div>
+                        <div class="note">Cards display receipt thumbnail, merchant, category and amount.</div>
+                    </article>
+                </div>
+
+                <section style="margin-top:20px" class="card">
+                    <div class="title">Recent Activity</div>
+                    <div class="list">
+                        <div class="list-item">
+                            <div style="width:8px;height:34px;background:#eef2ff;border-radius:6px;margin-right:12px">
+                            </div>
+                            <div>Subscription — Music</div>
+                            <div class="amount">$9.99</div>
+                        </div>
+                        <div class="list-item">
+                            <div style="width:8px;height:34px;background:#fff7ed;border-radius:6px;margin-right:12px">
+                            </div>
+                            <div>Lunch — Deli</div>
+                            <div class="amount">$12.50</div>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <!-- (Quick Add removed - FAB triggers Scan & Confirm) -->
+
+            <!-- Scan & Confirm -->
+            <section data-screen="scan" style="display:none">
+                <div class="card">
+                    <div class="title">Scan Receipt — Confirmation</div>
+                    <div class="meta">On-device OCR parses amount, date, and merchant. User can edit before saving.
+                    </div>
+                    <div style="margin-top:12px">
+                        <div style="display:flex;gap:12px;align-items:center">
+                            <div
+                                style="width:120px;height:80px;border-radius:8px;background:#f6faf8;display:flex;align-items:center;justify-content:center;color:var(--accent)">
+                                Photo</div>
+                            <div style="flex:1">
+                                <div class="field"><label>Amount</label><input value="$42.00" /></div>
+                                <div class="field"><label>Date</label><input value="2025-11-13" /></div>
+                                <div class="field"><label>Merchant</label><input value="SuperMart" /></div>
+                            </div>
+                        </div>
+                        <div class="actions"><button id="confirm-save" class="btn">Confirm & Save</button><button
+                                id="edit-image" class="btn ghost">Edit
+                                Image</button></div>
+                        <div class="note">Inline validation ensures amount is numeric and date is valid.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transaction Detail -->
+            <section data-screen="detail" style="display:none">
+                <div class="card">
+                    <div class="row">
+                        <div>
+                            <div class="title">Groceries — SuperMart</div>
+                            <div class="meta">Nov 12 • Receipt attached <span class="chip">Food</span></div>
+                        </div>
+                        <div class="amount">$23.42</div>
+                    </div>
+                    <div style="margin-top:12px">
+                        <div style="display:flex;gap:12px">
+                            <div style="flex:1">
+                                <div class="field"><label>Notes</label><input placeholder="Optional note" /></div>
+                                <div class="field"><label>Category</label><input value="Food" /></div>
+                            </div>
+                            <div style="width:160px">
+                                <div
+                                    style="height:120px;background:#fff7ed;border-radius:8px;display:flex;align-items:center;justify-content:center">
+                                    Receipt</div>
+                            </div>
+                        </div>
+                        <div class="actions"><button class="btn">Save Changes</button><button
+                                class="btn ghost">Delete</button></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports -->
+            <section data-screen="reports" style="display:none">
+                <div class="card">
+                    <div class="title">Reports</div>
+                    <div class="meta">Monthly summary • Pie and Bar charts</div>
+                    <div style="display:flex;gap:12px;margin-top:12px">
+                        <div
+                            style="flex:1;height:180px;border-radius:12px;background:linear-gradient(180deg,#eef2ff,#fff);display:flex;align-items:center;justify-content:center">
+                            Pie Chart</div>
+                        <div
+                            style="flex:1;height:180px;border-radius:12px;background:linear-gradient(180deg,#fff7ed,#fff);display:flex;align-items:center;justify-content:center">
+                            Bar Chart</div>
+                    </div>
+                    <div class="note">Charts are simplified placeholders in low-fidelity wireframes; we'll provide
+                        annotated versions for handoff.</div>
+                </div>
+            </section>
+        </main>
+
+        <div style="height:20px"></div>
+        <div class="note">Annotations: This wireframe set focuses on the card-first visual language with receipt
+            thumbnails, category chips, and strong card hierarchy. Interactions emphasized: quick add, inline receipt
+            confirmation, swipe-to-edit, and clear reports.</div>
+    </div>
+
+    <!-- overlay removed; Scan is a dedicated screen -->
+
+    <footer>Open this file locally to review wireframes. Provide feedback or request specific annotated screens.
+    </footer>
+
+    <script>
+        // helper to switch screens
+        function setActiveScreen(screen) {
+            document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.screen === screen));
+            document.querySelectorAll('[data-screen]').forEach(s => s.style.display = s.dataset.screen === screen ? 'block' : 'none');
+        }
+
+        document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', e => setActiveScreen(e.target.dataset.screen)));
+
+        // FAB opens Scan & Confirm screen (no separate Quick Add)
+        document.getElementById('open-fab').addEventListener('click', () => {
+            setActiveScreen('scan');
+        });
+
+        // Confirm & Save: create a new transaction card and return to Home
+        document.getElementById('confirm-save').addEventListener('click', () => {
+            const scanSection = document.querySelector('[data-screen="scan"]');
+            const amount = scanSection.querySelector('input[value]').value || scanSection.querySelector('input').value || '$0.00';
+            const date = scanSection.querySelectorAll('input')[1].value || '';
+            const merchant = scanSection.querySelectorAll('input')[2].value || 'Unknown';
+
+            // create card element
+            const grid = document.querySelector('.grid');
+            const art = document.createElement('article'); art.className = 'card';
+            art.innerHTML = `<div class="row"><div class="thumb" aria-hidden></div><div><div class="title">${merchant}</div><div class="meta">${date} • Receipt attached <span class="chip">Uncategorized</span></div></div><div class="amount">${amount}</div></div><div class="note">Added from scan</div>`;
+            grid.insertBefore(art, grid.firstChild);
+
+            // attach click handler to new card
+            attachCardHandlers(art);
+
+            // return to home and show a lightweight saved toast (note)
+            setActiveScreen('home');
+            // flash saved note
+            const note = document.createElement('div'); note.className = 'note'; note.textContent = 'Transaction saved locally.';
+            document.querySelector('.container').insertBefore(note, document.querySelector('.container').firstChild);
+            setTimeout(() => note.remove(), 2200);
+        });
+
+        // Edit image just focuses merchant input for prototype
+        document.getElementById('edit-image').addEventListener('click', () => {
+            const scanSection = document.querySelector('[data-screen="scan"]');
+            scanSection.querySelectorAll('input')[2].focus();
+        });
+
+        // clicking a card opens Transaction Detail populated from card
+        function attachCardHandlers(card) {
+            card.addEventListener('click', () => {
+                const title = card.querySelector('.title')?.textContent || '';
+                const meta = card.querySelector('.meta')?.textContent || '';
+                const amount = card.querySelector('.amount')?.textContent || '';
+                // populate detail screen
+                const detail = document.querySelector('[data-screen="detail"]');
+                detail.querySelector('.title').textContent = title;
+                detail.querySelector('.meta').textContent = meta;
+                detail.querySelector('.amount').textContent = amount;
+                // populate inputs
+                const inputs = detail.querySelectorAll('input');
+                if (inputs[0]) inputs[0].value = '';
+                if (inputs[1]) inputs[1].value = title.split(' — ')[0] || '';
+                setActiveScreen('detail');
+            });
+        }
+
+        // attach handlers to existing cards
+        document.querySelectorAll('.grid .card').forEach(c => attachCardHandlers(c));
+    </script>
+</body>
+
+</html>
