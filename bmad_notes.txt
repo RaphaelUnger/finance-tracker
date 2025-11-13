@@ -6,4 +6,9 @@ setup guide: https://github.com/bmad-code-org/BMAD-METHOD/blob/main/src/modules/
 4. Implementation
 
 -> BMM mehtod: BMad (Build More, Architect Dreams) Method Agile-AI Driven-Development
-    * GitHub Copilot in Expert Mode (deep technical understanding)
+    * GitHub Copilot with GPT-4.1 in Expert Mode (deep technical understanding)
+
+1. analyst agent
+
+
+Reflection: Difficult setup, required multiple reinstallations and inits to work with agents properly.
