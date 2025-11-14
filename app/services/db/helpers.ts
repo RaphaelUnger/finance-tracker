@@ -1,69 +1,46 @@
-// Minimal expo-sqlite helper examples (TypeScript)
-// These are small convenience wrappers inspired by the architecture doc
-
-import * as SQLite from 'expo-sqlite';
-
-export type TransactionRow = {
-    id: string;
-    amount: number; // cents
-    date: string; // ISO 8601
-    category?: string;
-    notes?: string;
-    merchant?: string;
-    created_at?: string;
-    updated_at?: string;
-};
-
-export function openDatabase(name = 'app.db') {
-    // Note: expo-sqlite exposes different APIs depending on SDK; check docs.
-    // This example uses the sync/open style from the docs. Adjust to openDatabaseAsync if available.
+let Database: any;
+try {
     // @ts-ignore
-    return SQLite.openDatabase(name);
+    Database = require('better-sqlite3');
+} catch (e) {
+    Database = null;
 }
 
-export async function createTransactionsTable(db: any) {
-    const sql = `
-  CREATE TABLE IF NOT EXISTS transactions (
-    id TEXT PRIMARY KEY,
-    amount INTEGER NOT NULL,
-    date TEXT NOT NULL,
-    category TEXT,
-    notes TEXT,
-    merchant TEXT,
-    created_at TEXT,
-    updated_at TEXT
-  );`;
-    // expo-sqlite provides execAsync/runAsync depending on SDK
-    if (db.execAsync) {
-        await db.execAsync(sql);
-    } else if (db.transaction) {
-        db.transaction((tx: any) => tx.executeSql(sql));
-    }
-}
+export function runMigrations(dbPath?: string) {
+    if (!Database) throw new Error('better-sqlite3 not available');
+    const dbFile = dbPath || 'app/data/transactions.db';
+    const db = new Database(dbFile);
 
-export async function addTransaction(db: any, t: TransactionRow) {
-    const now = new Date().toISOString();
-    const stmt = 'INSERT INTO transactions (id, amount, date, category, notes, merchant, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    const params = [t.id, t.amount, t.date, t.category ?? null, t.notes ?? null, t.merchant ?? null, t.created_at ?? now, t.updated_at ?? now];
-    if (db.runAsync) {
-        return db.runAsync(stmt, params);
-    }
-    // fallback using transaction/executeSql
-    return new Promise((resolve, reject) => {
-        db.transaction((tx: any) => {
-            tx.executeSql(stmt, params, (_: any, res: any) => resolve(res), (_: any, err: any) => reject(err));
-        });
-    });
-}
+    // ensure migrations table
+    db.exec(`CREATE TABLE IF NOT EXISTS migrations (id TEXT PRIMARY KEY, applied_at TEXT);`);
 
-export async function getRecentTransactions(db: any, limit = 100) {
-    const q = `SELECT * FROM transactions ORDER BY date DESC LIMIT ${limit}`;
-    if (db.getAllAsync) {
-        return db.getAllAsync(q);
+    const appliedStmt = db.prepare('SELECT id FROM migrations WHERE id = ?');
+    const insertMig = db.prepare('INSERT INTO migrations (id, applied_at) VALUES (?, ?)');
+
+    const migId = '001-create-transactions';
+    if (!appliedStmt.get(migId)) {
+        db.exec(`CREATE TABLE IF NOT EXISTS transactions (
+      id TEXT PRIMARY KEY,
+      amount_cents INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      category TEXT,
+      merchant TEXT,
+      notes TEXT,
+      recurrence TEXT,
+      created_at TEXT NOT NULL
+    );`);
+        insertMig.run(migId, new Date().toISOString());
     }
-    return new Promise((resolve, reject) => {
-        db.transaction((tx: any) => {
-            tx.executeSql(q, [], (_: any, { rows }: any) => resolve(rows._array || rows), (_: any, err: any) => reject(err));
-        });
-    });
+
+    // Migration 002: add recurrence column if not present
+    const migId2 = '002-add-recurrence';
+    if (!appliedStmt.get(migId2)) {
+        try {
+            // Add recurrence column if it doesn't exist. SQLite allows ALTER TABLE ADD COLUMN.
+            db.exec(`ALTER TABLE transactions ADD COLUMN recurrence TEXT;`);
+        } catch (e) {
+            // If column already exists or alter fails, ignore — we'll still mark migration applied
+        }
+        insertMig.run(migId2, new Date().toISOString());
+    }
 }

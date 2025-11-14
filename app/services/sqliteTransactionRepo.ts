@@ -1,4 +1,5 @@
 import { Transaction } from './models';
+import { runMigrations } from './db/helpers';
 
 let Database: any;
 try {
@@ -15,6 +16,12 @@ export class SQLiteTransactionRepo {
     constructor(dbPath?: string) {
         if (!Database) return;
         const path = dbPath || 'app/data/transactions.db';
+        // ensure migrations/schema
+        try {
+            runMigrations(path);
+        } catch (e) {
+            // ignore migration errors here
+        }
         this.db = new Database(path);
         this.init();
     }
@@ -25,14 +32,15 @@ export class SQLiteTransactionRepo {
       id TEXT PRIMARY KEY,
       amount_cents INTEGER NOT NULL,
       date TEXT NOT NULL,
-      category TEXT,
-      merchant TEXT,
-      notes TEXT,
-      created_at TEXT NOT NULL
+            category TEXT,
+            merchant TEXT,
+            notes TEXT,
+            recurrence TEXT,
+            created_at TEXT NOT NULL
     )`);
-        this.insertStmt = this.db.prepare(`INSERT INTO transactions (id, amount_cents, date, category, merchant, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+        this.insertStmt = this.db.prepare(`INSERT INTO transactions (id, amount_cents, date, category, merchant, notes, recurrence, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
         this.getStmt = this.db.prepare('SELECT * FROM transactions WHERE id = ?');
-        this.updateStmt = this.db.prepare('UPDATE transactions SET amount_cents = ?, date = ?, category = ?, merchant = ?, notes = ?, created_at = ? WHERE id = ?');
+        this.updateStmt = this.db.prepare('UPDATE transactions SET amount_cents = ?, date = ?, category = ?, merchant = ?, notes = ?, recurrence = ?, created_at = ? WHERE id = ?');
         this.deleteStmt = this.db.prepare('DELETE FROM transactions WHERE id = ?');
         this.listStmt = this.db.prepare('SELECT * FROM transactions ORDER BY date DESC');
     }
@@ -45,7 +53,8 @@ export class SQLiteTransactionRepo {
 
     async create(tx: Transaction): Promise<void> {
         if (!this.db) throw new Error('SQLite not available');
-        this.insertStmt.run(tx.id, tx.amountCents, tx.date, tx.category || null, tx.merchant || null, tx.notes || null, tx.createdAt);
+        const rec = tx.recurrence ? JSON.stringify(tx.recurrence) : null;
+        this.insertStmt.run(tx.id, tx.amountCents, tx.date, tx.category || null, tx.merchant || null, tx.notes || null, rec, tx.createdAt);
     }
 
     async get(id: string): Promise<Transaction | null> {
@@ -59,6 +68,7 @@ export class SQLiteTransactionRepo {
             category: row.category,
             merchant: row.merchant,
             notes: row.notes,
+            recurrence: row.recurrence ? JSON.parse(row.recurrence) : null,
             createdAt: row.created_at
         } as Transaction;
     }
@@ -68,7 +78,8 @@ export class SQLiteTransactionRepo {
         const cur = await this.get(id);
         if (!cur) throw new Error('not found');
         const merged = { ...cur, ...patch } as Transaction;
-        this.updateStmt.run(merged.amountCents, merged.date, merged.category || null, merged.merchant || null, merged.notes || null, merged.createdAt, id);
+        const rec = merged.recurrence ? JSON.stringify(merged.recurrence) : null;
+        this.updateStmt.run(merged.amountCents, merged.date, merged.category || null, merged.merchant || null, merged.notes || null, rec, merged.createdAt, id);
     }
 
     async delete(id: string): Promise<void> {
@@ -86,6 +97,7 @@ export class SQLiteTransactionRepo {
             category: r.category,
             merchant: r.merchant,
             notes: r.notes,
+            recurrence: r.recurrence ? JSON.parse(r.recurrence) : null,
             createdAt: r.created_at
         } as Transaction));
     }

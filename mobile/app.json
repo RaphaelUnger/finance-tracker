@@ -1,0 +1,12 @@
+{
+    "expo": {
+        "name": "Finance Tracker Mobile",
+        "slug": "finance-tracker-mobile",
+        "version": "0.1.0",
+        "platforms": [
+            "ios",
+            "android",
+            "web"
+        ]
+    }
+}

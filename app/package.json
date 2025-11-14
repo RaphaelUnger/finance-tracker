@@ -4,7 +4,9 @@
     "private": true,
     "scripts": {
         "test": "jest",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "cli": "node app/bin/cli.js",
+        "migrate": "node app/bin/migrate.js"
     },
     "devDependencies": {
         "@types/jest": "^29.5.3",
