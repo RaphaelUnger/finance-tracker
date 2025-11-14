@@ -1,0 +1,233 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { v4 as uuidv4 } from 'uuid';
+
+export type Transaction = {
+    id: string;
+    title: string;
+    amount: number; // cents
+    date: string; // YYYY-MM-DD
+    category?: string;
+    merchant?: string;
+    notes?: string;
+    recurrence?: any | null;
+    createdAt?: string;
+};
+
+const KEY = 'ft_transactions_v1';
+
+// Helper: wrap expo-sqlite executeSql in a Promise
+async function tryRequire(name: string) {
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        return require(name);
+    } catch (e) {
+        return null;
+    }
+}
+
+class AsyncStorageRepo {
+    async list(): Promise<Transaction[]> {
+        const raw = await AsyncStorage.getItem(KEY);
+        if (!raw) return [];
+        try {
+            return JSON.parse(raw) as Transaction[];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    async get(id: string): Promise<Transaction | undefined> {
+        const all = await this.list();
+        return all.find((t) => t.id === id);
+    }
+
+    async create(input: Omit<Transaction, 'id'>): Promise<Transaction> {
+        const tx: Transaction = { ...input, id: uuidv4(), createdAt: new Date().toISOString() };
+        const all = await this.list();
+        all.unshift(tx);
+        await AsyncStorage.setItem(KEY, JSON.stringify(all));
+        return tx;
+    }
+
+    async update(id: string, patch: Partial<Omit<Transaction, 'id'>>): Promise<Transaction> {
+        const all = await this.list();
+        const idx = all.findIndex((t) => t.id === id);
+        if (idx === -1) throw new Error('Not found');
+        const updated = { ...all[idx], ...patch };
+        all[idx] = updated;
+        await AsyncStorage.setItem(KEY, JSON.stringify(all));
+        return updated;
+    }
+
+    async delete(id: string): Promise<void> {
+        const all = await this.list();
+        const filtered = all.filter((t) => t.id !== id);
+        await AsyncStorage.setItem(KEY, JSON.stringify(filtered));
+    }
+}
+
+class SQLiteRepo {
+    private SQLite: any;
+    private db: any;
+
+    constructor(SQLiteModule: any) {
+        this.SQLite = SQLiteModule;
+        this.db = this.SQLite.openDatabase('transactions.db');
+    }
+
+    private execSqlAsync(sql: string, params: any[] = []): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.db.transaction((tx: any) => {
+                tx.executeSql(
+                    sql,
+                    params,
+                    (_t: any, result: any) => resolve(result),
+                    (_t: any, err: any) => { reject(err); return false; }
+                );
+            }, (err: any) => reject(err));
+        });
+    }
+
+    async init() {
+        // run migrations/create table
+        const createSql = `CREATE TABLE IF NOT EXISTS transactions (
+            id TEXT PRIMARY KEY,
+            title TEXT,
+            amount INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            category TEXT,
+            merchant TEXT,
+            notes TEXT,
+            recurrence TEXT,
+            created_at TEXT NOT NULL
+        )`;
+        await this.execSqlAsync(createSql);
+    }
+
+    async list(): Promise<Transaction[]> {
+        const res = await this.execSqlAsync('SELECT * FROM transactions ORDER BY date DESC');
+        const rows = [] as Transaction[];
+        for (let i = 0; i < res.rows.length; i++) {
+            const r = res.rows.item(i);
+            rows.push({
+                id: r.id,
+                title: r.title,
+                amount: r.amount,
+                date: r.date,
+                category: r.category,
+                merchant: r.merchant,
+                notes: r.notes,
+                recurrence: r.recurrence ? JSON.parse(r.recurrence) : null,
+                createdAt: r.created_at
+            });
+        }
+        return rows;
+    }
+
+    async get(id: string): Promise<Transaction | undefined> {
+        const res = await this.execSqlAsync('SELECT * FROM transactions WHERE id = ?', [id]);
+        if (res.rows.length === 0) return undefined;
+        const r = res.rows.item(0);
+        return {
+            id: r.id,
+            title: r.title,
+            amount: r.amount,
+            date: r.date,
+            category: r.category,
+            merchant: r.merchant,
+            notes: r.notes,
+            recurrence: r.recurrence ? JSON.parse(r.recurrence) : null,
+            createdAt: r.created_at
+        };
+    }
+
+    async create(input: Omit<Transaction, 'id'>): Promise<Transaction> {
+        const id = uuidv4();
+        const createdAt = new Date().toISOString();
+        const rec = input.recurrence ? JSON.stringify(input.recurrence) : null;
+        await this.execSqlAsync('INSERT INTO transactions (id, title, amount, date, category, merchant, notes, recurrence, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [id, input.title, input.amount, input.date, input.category || null, input.merchant || null, input.notes || null, rec, createdAt]);
+        return { ...input, id, createdAt } as Transaction;
+    }
+
+    async update(id: string, patch: Partial<Omit<Transaction, 'id'>>): Promise<Transaction> {
+        const cur = await this.get(id);
+        if (!cur) throw new Error('not found');
+        const merged = { ...cur, ...patch } as Transaction;
+        const rec = merged.recurrence ? JSON.stringify(merged.recurrence) : null;
+        await this.execSqlAsync('UPDATE transactions SET title = ?, amount = ?, date = ?, category = ?, merchant = ?, notes = ?, recurrence = ?, created_at = ? WHERE id = ?', [merged.title, merged.amount, merged.date, merged.category || null, merged.merchant || null, merged.notes || null, rec, merged.createdAt || new Date().toISOString(), id]);
+        return merged;
+    }
+
+    async delete(id: string): Promise<void> {
+        await this.execSqlAsync('DELETE FROM transactions WHERE id = ?', [id]);
+    }
+}
+
+export class TransactionService {
+    private static instance: TransactionService | null = null;
+    private repo: any;
+
+    static async getInstanceAsync(): Promise<TransactionService> {
+        if (!this.instance) {
+            const svc = new TransactionService();
+            await svc.init();
+            this.instance = svc;
+        }
+        return this.instance;
+    }
+
+    static getInstance(): TransactionService {
+        if (!this.instance) {
+            // lazy non-async creation: will initialize repo on first call
+            this.instance = new TransactionService();
+            // fire-and-forget init
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            this.instance.init();
+        }
+        return this.instance;
+    }
+
+    private constructor() {
+        this.repo = null;
+    }
+
+    private async init() {
+        if (this.repo) return;
+        const SQLite = await tryRequire('expo-sqlite');
+        if (SQLite && SQLite.openDatabase) {
+            const repo = new SQLiteRepo(SQLite);
+            await repo.init();
+            this.repo = repo;
+            return;
+        }
+        // fallback to AsyncStorage repo
+        this.repo = new AsyncStorageRepo();
+    }
+
+    async list(): Promise<Transaction[]> {
+        if (!this.repo) await this.init();
+        return this.repo.list();
+    }
+
+    async get(id: string): Promise<Transaction | undefined> {
+        if (!this.repo) await this.init();
+        return this.repo.get(id);
+    }
+
+    async create(input: Omit<Transaction, 'id'>): Promise<Transaction> {
+        if (!this.repo) await this.init();
+        return this.repo.create(input);
+    }
+
+    async update(id: string, patch: Partial<Omit<Transaction, 'id'>>): Promise<Transaction> {
+        if (!this.repo) await this.init();
+        return this.repo.update(id, patch);
+    }
+
+    async delete(id: string): Promise<void> {
+        if (!this.repo) await this.init();
+        return this.repo.delete(id);
+    }
+}
+
+export default TransactionService;

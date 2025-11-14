@@ -12,7 +12,7 @@ const TransactionList: React.FC<Props> = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
 
     const load = useCallback(async () => {
-        const svc = TransactionService.getInstance();
+        const svc = await TransactionService.getInstanceAsync();
         const list = await svc.list();
         setItems(list);
     }, []);

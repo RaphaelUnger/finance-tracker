@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format } from 'date-fns';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { TransactionService } from '../services/transactionService';
@@ -7,15 +9,19 @@ import { TransactionService } from '../services/transactionService';
 type Props = NativeStackScreenProps<RootStackParamList, 'Form'>;
 
 const TransactionForm: React.FC<Props> = ({ navigation, route }) => {
-    const svc = TransactionService.getInstance();
+    const [svc, setSvc] = useState<any>(null);
+    useEffect(() => {
+        TransactionService.getInstanceAsync().then((s) => setSvc(s));
+    }, []);
     const id = route.params?.id;
     const [title, setTitle] = useState('');
     const [amount, setAmount] = useState('0.00');
     const [date, setDate] = useState('');
+    const [showPicker, setShowPicker] = useState(false);
 
     useEffect(() => {
-        if (id) {
-            svc.get(id).then((tx) => {
+        if (id && svc) {
+            svc.get(id).then((tx: any) => {
                 if (tx) {
                     setTitle(tx.title);
                     setAmount((tx.amount / 100).toFixed(2));
@@ -33,6 +39,7 @@ const TransactionForm: React.FC<Props> = ({ navigation, route }) => {
         const amt = Math.round(parsed * 100);
         if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date)) return Alert.alert('Validation', 'Date must be YYYY-MM-DD');
         try {
+            if (!svc) return Alert.alert('Error', 'Service not ready');
             if (id) {
                 await svc.update(id, { title, amount: amt, date });
             } else {
@@ -48,7 +55,7 @@ const TransactionForm: React.FC<Props> = ({ navigation, route }) => {
         if (!id) return;
         Alert.alert('Confirm delete', 'Are you sure you want to delete this transaction?', [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', style: 'destructive', onPress: async () => { await svc.delete(id); navigation.navigate('List'); } }
+            { text: 'Delete', style: 'destructive', onPress: async () => { if (!svc) return Alert.alert('Error', 'Service not ready'); await svc.delete(id); navigation.navigate('List'); } }
         ]);
     };
 
@@ -58,8 +65,21 @@ const TransactionForm: React.FC<Props> = ({ navigation, route }) => {
             <TextInput style={styles.input} value={title} onChangeText={setTitle} />
             <Text>Amount (EUR)</Text>
             <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="numeric" />
-            <Text>Date (YYYY-MM-DD)</Text>
-            <TextInput style={styles.input} value={date} onChangeText={setDate} />
+            <Text>Date</Text>
+            <View style={{ marginBottom: 12 }}>
+                <Button title={date ? format(new Date(date), 'yyyy-MM-dd') : 'Choose date'} onPress={() => setShowPicker(true)} />
+            </View>
+            {showPicker && (
+                <DateTimePicker
+                    value={date ? new Date(date) : new Date()}
+                    mode="date"
+                    display={Platform.OS === 'android' ? 'calendar' : 'spinner'}
+                    onChange={(e, d) => {
+                        setShowPicker(Platform.OS === 'ios');
+                        if (d) setDate(format(d, 'yyyy-MM-dd'));
+                    }}
+                />
+            )}
             <View style={styles.buttons}>
                 <Button title="Save" onPress={save} />
                 {id ? <Button title="Delete" color="#c00" onPress={remove} /> : null}

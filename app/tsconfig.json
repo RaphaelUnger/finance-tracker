@@ -1,23 +1,23 @@
 {
     "compilerOptions": {
-        "target": "es2020",
-        "module": "commonjs",
-        "lib": [
-            "es2020"
-        ],
+        "target": "ESNext",
+        "module": "ESNext",
+        "jsx": "react-jsx",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
+        "moduleResolution": "node",
         "resolveJsonModule": true,
-        "outDir": "dist",
-        "rootDir": "./"
+        "allowSyntheticDefaultImports": true,
+        "baseUrl": "./",
+        "paths": {
+            "@/*": [
+                "src/*"
+            ]
+        }
     },
-    "include": [
-        "./services/**/*.ts",
-        "./tests/**/*.ts"
-    ],
     "exclude": [
         "node_modules",
-        "dist"
+        "babel.config.js"
     ]
 }
