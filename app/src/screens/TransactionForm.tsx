@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, Platform, Switch } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
+import { format } from 'date-fns';
+import { nextOccurrence } from '../services/recurrenceService';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { TransactionService } from '../services/transactionService';
@@ -49,10 +51,11 @@ const TransactionForm: React.FC<Props> = ({ navigation, route }) => {
         if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date)) return Alert.alert('Validation', 'Date must be YYYY-MM-DD');
         try {
             if (!svc) return Alert.alert('Error', 'Service not ready');
+            const recObj = recurring ? { frequency, interval: Number(interval), nextRun: nextOccurrence(date, { frequency, interval: Number(interval) } as any) } : null;
             if (id) {
-                await svc.update(id, { title, amount: amt, date });
+                await svc.update(id, { title, amount: amt, date, recurrence: recObj });
             } else {
-                await svc.create({ title, amount: amt, date });
+                await svc.create({ title, amount: amt, date, recurrence: recObj });
             }
             navigation.navigate('List');
         } catch (err: any) {

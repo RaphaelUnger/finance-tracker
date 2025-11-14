@@ -10,6 +10,9 @@ setup guide: https://github.com/bmad-code-org/BMAD-METHOD/blob/main/src/modules/
 
 1. analyst agent
 2. architect agent
+3. ux-designer
+4. dev
+5. tester
 
 
 Reflection: Difficult setup, required multiple reinstallations and inits to work with agents properly.

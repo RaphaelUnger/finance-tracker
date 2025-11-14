@@ -3,6 +3,7 @@ import { View, Text, FlatList, Button, StyleSheet, TouchableOpacity, RefreshCont
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { TransactionService } from '../services/transactionService';
+import { runGenerator } from '../services/recurrenceService';
 import type { Transaction } from '../services/transactionService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'List'>;
@@ -34,6 +35,8 @@ const TransactionList: React.FC<Props> = ({ navigation }) => {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
                 <Button title="Add" onPress={() => navigation.navigate('Form')} />
                 <Button title="Scan" onPress={() => navigation.navigate('Scan')} />
+                <Button title="Recurrences" onPress={() => navigation.navigate('Recurrences')} />
+                <Button title="Generate recurring" onPress={async () => { await runGenerator(60); await load(); }} />
             </View>
             {items.length === 0 ? (
                 <View style={styles.empty}>
