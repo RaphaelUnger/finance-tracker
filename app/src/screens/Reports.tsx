@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, TextInput, Alert, ScrollView } from 'react-native';
 import type { NavProps } from '../types/navigation';
-import { exportMonthToCsv, importCsvToTransactions, parseCsv, importCsvWithMapping, validateRow } from '../services/exportService';
+import { exportMonthToCsv, importCsvToTransactions, parseCsv, importCsvWithMapping, importCsvWithMappingWithStats, validateRow } from '../services/exportService';
 import { Picker } from '@react-native-picker/picker';
 import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import { TransactionService } from '../services/transactionService';
+import { useI18n } from '../i18n/react';
 
 type Props = NavProps;
 
@@ -37,31 +38,41 @@ function Reports({ navigation }: Props) {
         load();
     }, [year, month]);
 
+    const { t } = useI18n();
+
     return (
         <ScrollView style={styles.container}>
-            <Text style={styles.h1}>Monthly report</Text>
+            <Text style={styles.h1}>{t('reports.monthlyReport')}</Text>
             <View style={styles.row}>
-                <Text>Year:</Text>
+                <Text>{t('reports.year')}</Text>
                 <TextInput style={styles.input} value={String(year)} onChangeText={(v: string) => setYear(Number(v) || year)} keyboardType="numeric" />
-                <Text>Month:</Text>
+                <Text>{t('reports.month')}</Text>
                 <TextInput style={styles.input} value={String(month)} onChangeText={(v: string) => setMonth(Number(v) || month)} keyboardType="numeric" />
-                <Button title="Export CSV" onPress={async () => {
+                <Button accessibilityLabel={t('reports.exportCsv')} title={t('reports.exportCsv')} onPress={async () => {
                     try {
                         const csv = await exportMonthToCsv(year, month);
                         // for now, just show an alert with the CSV length and copy to clipboard could be added
-                        Alert.alert('CSV Export', `Generated CSV with ${csv.split('\n').length} lines`);
+                        Alert.alert(t('reports.csvExportTitle'), `${t('reports.generatedLines')}: ${csv.split('\n').length}`);
                     } catch (e: any) {
-                        Alert.alert('Export failed', e.message || String(e));
+                        Alert.alert(t('reports.exportFailed'), e.message || String(e));
                     }
                 }} />
             </View>
             <View style={{ marginVertical: 12 }}>
-                <Text style={styles.h2}>Category totals</Text>
-                {Object.keys(summary).length === 0 ? <Text>No data for this month</Text> : (
+                <Text style={styles.h2}>{t('reports.categoryTotals')}</Text>
+                {Object.keys(summary).length === 0 ? <Text>{t('reports.noDataForMonth')}</Text> : (
                     <View>
                         {Object.entries(summary).map(([k, v]) => (
-                            <View key={k} style={styles.catRow}><Text>{k}</Text><Text>€{(Number(v) / 100).toFixed(2)}</Text></View>
+                            <View key={k} style={styles.catRow}><Text>{k}</Text><Text>
+                                {t('currency_symbol')}{(Number(v) / 100).toFixed(2)}</Text></View>
                         ))}
+                        {/* accessible textual summary for screen readers */}
+                        <View accessible accessibilityLabel={t('reports.chartSummary') || 'Category totals'}>
+                            <Text style={{ marginTop: 8, fontWeight: '600' }}>{t('reports.categoryTotals')}</Text>
+                            {Object.entries(summary).map(([k, v]) => (
+                                <Text key={`sum-${k}`}>{k}: {t('currency_symbol')}{(Number(v) / 100).toFixed(2)}</Text>
+                            ))}
+                        </View>
                         {/* cast to any to satisfy TS until chart types are added */}
                         <BarChart
                             data={{
@@ -70,7 +81,8 @@ function Reports({ navigation }: Props) {
                             }}
                             width={(Dimensions.get('window').width - 32) as any}
                             height={220}
-                            yAxisLabel="€"
+                            yAxisLabel={t('currency_symbol')}
+                            yAxisSuffix=""
                             chartConfig={{
                                 backgroundGradientFrom: '#fff',
                                 backgroundGradientTo: '#fff',
@@ -85,12 +97,12 @@ function Reports({ navigation }: Props) {
             </View>
 
             <View style={{ marginTop: 16 }}>
-                <Text style={styles.h2}>Import CSV</Text>
-                <Text>Paste CSV content below and press Import. Header should include at least: title,amount,date</Text>
-                <TextInput value={csvIn} onChangeText={setCsvIn} multiline style={styles.textarea} placeholder="title,amount,date,category,merchant,notes" />
+                <Text style={styles.h2}>{t('reports.importCsv')}</Text>
+                <Text>{t('reports.importInstructions')}</Text>
+                <TextInput accessibilityLabel={t('reports.csvInput')} value={csvIn} onChangeText={setCsvIn} multiline style={styles.textarea} placeholder={t('reports.csvPlaceholder')} />
                 <View style={{ marginVertical: 8 }}>
-                    <Button title="Preview CSV" onPress={() => {
-                        if (!csvIn.trim()) return Alert.alert('No CSV', 'Please paste CSV content');
+                    <Button accessibilityLabel={t('reports.previewCsv')} title={t('reports.previewCsv')} onPress={() => {
+                        if (!csvIn.trim()) return Alert.alert(t('reports.noCsv'), t('reports.pleasePasteCsv'));
                         const p = parseCsv(csvIn);
                         setPreview({ header: p.header, rows: p.rows.map(r => p.header.map(h => r[h] || '')) });
                         // reset mapping
@@ -101,37 +113,37 @@ function Reports({ navigation }: Props) {
                         setValidation(vals);
                     }} />
                     <View style={{ height: 8 }} />
-                    <Button title="Pick CSV file" onPress={async () => {
+                    <Button accessibilityLabel={t('reports.pickCsvFile')} title={t('reports.pickCsvFile')} onPress={async () => {
                         try {
                             // dynamic import to avoid hard dependency
-                            const docPicker = await import('expo-document-picker');
+                            const docPicker: any = await import('expo-document-picker');
                             const res = await docPicker.getDocumentAsync({ type: 'text/*' });
                             if (res.type !== 'success' || !res.uri) return;
-                            const fs = await import('expo-file-system');
+                            const fs: any = await import('expo-file-system');
                             const text = await fs.readAsStringAsync(res.uri, { encoding: fs.EncodingType.UTF8 });
                             setCsvIn(text);
                             const p = parseCsv(text);
-                            setPreview(p);
+                            setPreview({ header: p.header, rows: p.rows.map((r: Record<string, string>) => p.header.map(h => r[h] || '')) });
                             setMapping({ title: p.header[0] || undefined, amount: p.header.find(h => /amount|amt|value/i.test(h)) || undefined, date: p.header.find(h => /date/i.test(h)) || undefined, category: p.header.find(h => /cat/i.test(h)) || undefined, merchant: p.header.find(h => /merchant|vendor|payee/i.test(h)) || undefined, notes: p.header.find(h => /note|memo/i.test(h)) || undefined });
                         } catch (e: any) {
-                            Alert.alert('Pick failed', "Install 'expo-document-picker' and 'expo-file-system' or paste CSV manually.");
+                            Alert.alert(t('reports.pickFailed'), t('reports.pickFailedHelp'));
                         }
                     }} />
                 </View>
                 {preview.header.length > 0 ? (
                     <View style={{ marginVertical: 8 }}>
-                        <Text style={{ fontWeight: '600' }}>Header</Text>
+                        <Text style={{ fontWeight: '600' }}>{t('reports.header')}</Text>
                         <Text>{preview.header.join(', ')}</Text>
-                        <Text style={{ fontWeight: '600', marginTop: 8 }}>Preview rows</Text>
+                        <Text style={{ fontWeight: '600', marginTop: 8 }}>{t('reports.previewRows')}</Text>
                         {preview.rows.slice(0, 5).map((r: string[], i: number) => (<Text key={i}>{r.join(' , ')}</Text>))}
 
-                        <Text style={{ fontWeight: '600', marginTop: 8 }}>Validation (first 10 rows)</Text>
+                        <Text style={{ fontWeight: '600', marginTop: 8 }}>{t('reports.validationFirstRows')}</Text>
                         {validation.slice(0, 10).map((v: { valid: boolean; errors: string[] }, i: number) => (<Text key={i} style={{ color: v.valid ? 'green' : 'red' }}>{v.valid ? 'OK' : v.errors.join('; ')}</Text>))}
 
-                        <Text style={{ fontWeight: '600', marginTop: 8 }}>Map columns</Text>
+                        <Text style={{ fontWeight: '600', marginTop: 8 }}>{t('reports.mapColumns')}</Text>
                         {['title', 'amount', 'date', 'category', 'merchant', 'notes'].map((field) => (
                             <View key={field} style={{ marginVertical: 4 }}>
-                                <Text>{field}</Text>
+                                <Text>{t(`fields.${field}`) || field}</Text>
                                 <View style={{ borderWidth: 1, borderColor: '#ddd', padding: 6 }}>
                                     <Picker selectedValue={mapping[field as any]} onValueChange={(v: string | undefined) => setMapping({ ...mapping, [field]: v })}>
                                         <Picker.Item label="(none)" value={undefined} />
@@ -141,13 +153,13 @@ function Reports({ navigation }: Props) {
                             </View>
                         ))}
 
-                        <Button title="Import mapped CSV" onPress={async () => {
+                        <Button accessibilityLabel={t('reports.importMappedCsv')} title={t('reports.importMappedCsv')} onPress={async () => {
                             try {
-                                const res = await importCsvWithMapping(csvIn, mapping as any);
-                                Alert.alert('Import complete', `Imported ${res.created} transactions. ${res.errors} errors.`);
+                                const res = await importCsvWithMappingWithStats(csvIn, mapping as any);
+                                Alert.alert(t('reports.importComplete'), `${t('reports.importedTransactions')}: ${res.created}. ${t('reports.importErrors')}: ${res.errors}.`);
                                 setCsvIn(''); setPreview({ header: [], rows: [] }); setValidation([]);
                             } catch (e: any) {
-                                Alert.alert('Import failed', e.message || String(e));
+                                Alert.alert(t('reports.importFailed'), e.message || String(e));
                             }
                         }} />
                     </View>

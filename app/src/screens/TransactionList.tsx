@@ -4,6 +4,7 @@ import type { NavProps } from '../types/navigation';
 import { TransactionService } from '../services/transactionService';
 import { runGenerator } from '../services/recurrenceService';
 import type { Transaction } from '../services/transactionService';
+import { useI18n } from '../i18n/react';
 
 type Props = NavProps;
 
@@ -29,18 +30,20 @@ function TransactionList({ navigation }: Props) {
         setRefreshing(false);
     }, [load]);
 
+    const { t } = useI18n();
+
     return (
         <View style={styles.container}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Button title="Add" onPress={() => navigation.navigate('Form')} />
-                <Button title="Scan" onPress={() => navigation.navigate('Scan')} />
-                <Button title="Recurrences" onPress={() => navigation.navigate('Recurrences')} />
-                <Button title="Generate recurring" onPress={async () => { await runGenerator(60); await load(); }} />
+                <Button title={t('list.add')} onPress={() => navigation.navigate('Form')} />
+                <Button title={t('list.scan')} onPress={() => navigation.navigate('Scan')} />
+                <Button title={t('list.recurrences')} onPress={() => navigation.navigate('Recurrences')} />
+                <Button title={t('list.generateRecurring')} onPress={async () => { await runGenerator(60); await load(); }} />
             </View>
             {items.length === 0 ? (
                 <View style={styles.empty}>
-                    <Text style={styles.emptyText}>No transactions yet.</Text>
-                    <Button title="Add sample data" onPress={async () => { const svc = TransactionService.getInstance(); await svc.create({ title: 'Coffee', amount: 350, date: new Date().toISOString().slice(0, 10) }); await svc.create({ title: 'Groceries', amount: 4599, date: new Date().toISOString().slice(0, 10) }); await load(); }} />
+                    <Text style={styles.emptyText}>{t('no_transactions_yet')}</Text>
+                    <Button accessibilityLabel="add-sample-data" title={t('add_sample_data')} onPress={async () => { const svc = TransactionService.getInstance(); await svc.create({ title: 'Coffee', amount: 350, date: new Date().toISOString().slice(0, 10) }); await svc.create({ title: 'Groceries', amount: 4599, date: new Date().toISOString().slice(0, 10) }); await load(); }} />
                 </View>
             ) : (
                 <FlatList
@@ -73,6 +76,9 @@ const styles = StyleSheet.create({
     container: { flex: 1, padding: 16 },
     item: { padding: 12, borderBottomWidth: 1, borderColor: '#eee', flexDirection: 'row', justifyContent: 'space-between' },
     title: { fontSize: 16 },
-    amount: { fontSize: 16, fontWeight: '600' }
-    , recurrence: { fontSize: 12, color: '#666' }
+    amount: { fontSize: 16, fontWeight: '600' },
+    recurrence: { fontSize: 12, color: '#666' },
+    empty: { alignItems: 'center', padding: 24 },
+    emptyText: { marginBottom: 12, color: '#666' },
+    date: { fontSize: 12, color: '#444' }
 });

@@ -4,6 +4,7 @@ import type { NavProps } from '../types/navigation';
 import { TransactionService } from '../services/transactionService';
 import type { Transaction } from '../services/transactionService';
 import { rollbackGeneratedFor } from '../services/recurrenceService';
+import { useI18n } from '../i18n/react';
 
 type Props = NavProps;
 
@@ -22,11 +23,13 @@ function Recurrences({ navigation }: Props) {
         return unsub;
     }, [navigation, load]);
 
+    const { t } = useI18n();
+
     return (
         <View style={styles.container}>
-            <Button title="Add rule" onPress={() => navigation.navigate('Form')} />
+            <Button title={t('recurrences.addRule') || 'Add rule'} onPress={() => navigation.navigate('Form')} />
             {rules.length === 0 ? (
-                <View style={styles.empty}><Text style={styles.emptyText}>No recurring rules.</Text></View>
+                <View style={styles.empty}><Text style={styles.emptyText}>{t('recurrences.noRules') || 'No recurring rules.'}</Text></View>
             ) : (
                 <FlatList
                     data={rules}
@@ -39,16 +42,16 @@ function Recurrences({ navigation }: Props) {
                                 <Text style={styles.meta}>Next: {item.recurrence?.nextRun || item.date}</Text>
                             </View>
                             <View style={styles.actions}>
-                                <Button title="Edit" onPress={() => navigation.navigate('Form', { id: item.id })} />
-                                <Button title="Disable" onPress={async () => {
+                                <Button title={t('edit') || 'Edit'} onPress={() => navigation.navigate('Form', { id: item.id })} />
+                                <Button title={t('disable') || 'Disable'} onPress={async () => {
                                     const svc = await TransactionService.getInstanceAsync();
                                     await svc.update(item.id, { recurrence: null });
                                     await load();
                                 }} />
-                                <Button title="Rollback" color="#c00" onPress={() => {
-                                    Alert.alert('Rollback generated', 'Remove all generated instances for this rule?', [
-                                        { text: 'Cancel', style: 'cancel' },
-                                        { text: 'Yes', style: 'destructive', onPress: async () => { await rollbackGeneratedFor(item.id); await load(); } }
+                                <Button title={t('recurrences.rollback') || 'Rollback'} color="#c00" onPress={() => {
+                                    Alert.alert(t('recurrences.rollback_generated') || 'Rollback generated', t('recurrences.rollback_generated_msg') || 'Remove all generated instances for this rule?', [
+                                        { text: t('settings.cancel') || 'Cancel', style: 'cancel' },
+                                        { text: t('yes') || 'Yes', style: 'destructive', onPress: async () => { await rollbackGeneratedFor(item.id); await load(); } }
                                     ]);
                                 }} />
                             </View>

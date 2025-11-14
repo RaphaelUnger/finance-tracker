@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import TransactionList from './screens/TransactionList';
@@ -8,7 +8,7 @@ import ScanReview from './screens/ScanReview';
 import Recurrences from './screens/Recurrences';
 import { runGenerator } from './services/recurrenceService';
 import Reports from './screens/Reports';
-import React, { useEffect, useState } from 'react';
+import { I18nProvider } from './i18n/react';
 import LockScreen from './screens/LockScreen';
 import * as LockService from './services/lockService';
 
@@ -55,15 +55,17 @@ export default function App() {
     }
 
     return (
-        <NavigationContainer>
-            <Stack.Navigator initialRouteName="List">
-                <Stack.Screen name="List" component={TransactionList} options={{ title: 'Transactions' }} />
-                <Stack.Screen name="Form" component={TransactionForm} options={{ title: 'Add / Edit' }} />
-                <Stack.Screen name="Scan" component={Scan} options={{ title: 'Scan Receipt' }} />
-                <Stack.Screen name="ScanReview" component={ScanReview} options={{ title: 'Review Receipt' }} />
-                <Stack.Screen name="Recurrences" component={Recurrences} options={{ title: 'Recurring rules' }} />
-                <Stack.Screen name="Reports" component={Reports} options={{ title: 'Reports' }} />
-            </Stack.Navigator>
-        </NavigationContainer>
+        <I18nProvider>
+            <NavigationContainer>
+                <Stack.Navigator initialRouteName="List">
+                    <Stack.Screen name="List" component={TransactionList} options={{ title: 'Transactions' }} />
+                    <Stack.Screen name="Form" component={TransactionForm} options={{ title: 'Add / Edit' }} />
+                    <Stack.Screen name="Scan" component={Scan} options={{ title: 'Scan Receipt' }} />
+                    <Stack.Screen name="ScanReview" component={ScanReview} options={{ title: 'Review Receipt' }} />
+                    <Stack.Screen name="Recurrences" component={Recurrences} options={{ title: 'Recurring rules' }} />
+                    <Stack.Screen name="Reports" component={Reports} options={{ title: 'Reports' }} />
+                </Stack.Navigator>
+            </NavigationContainer>
+        </I18nProvider>
     );
 }
