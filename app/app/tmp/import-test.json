@@ -1,0 +1,22 @@
+{
+  "1": {
+    "id": "1",
+    "amountCents": 1000,
+    "date": "2025-05-01",
+    "category": "Food",
+    "merchant": "Cafe",
+    "notes": "Meal",
+    "createdAt": "2025-05-01T12:00:00Z",
+    "recurrence": null
+  },
+  "2": {
+    "id": "2",
+    "amountCents": 2050,
+    "date": "2025-05-02",
+    "category": "Transport",
+    "merchant": "TaxiCo",
+    "notes": "Uber",
+    "createdAt": "2025-05-02T08:00:00Z",
+    "recurrence": null
+  }
+}

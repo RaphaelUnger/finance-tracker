@@ -80,3 +80,24 @@ jobs:
             playwright-report/
             coverage/
           retention-days: 7
+
+  app-tests:
+    name: App tests
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install and run app tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd app
+          npm ci
+          npm test
