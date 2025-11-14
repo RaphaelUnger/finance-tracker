@@ -31,7 +31,10 @@ const TransactionList: React.FC<Props> = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <Button title="Add" onPress={() => navigation.navigate('Form')} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Button title="Add" onPress={() => navigation.navigate('Form')} />
+                <Button title="Scan" onPress={() => navigation.navigate('Scan')} />
+            </View>
             {items.length === 0 ? (
                 <View style={styles.empty}>
                     <Text style={styles.emptyText}>No transactions yet.</Text>
@@ -48,6 +51,9 @@ const TransactionList: React.FC<Props> = ({ navigation }) => {
                                 <View>
                                     <Text style={styles.title}>{item.title}</Text>
                                     <Text style={styles.date}>{item.date}</Text>
+                                    {item.recurrence ? (
+                                        <Text style={styles.recurrence}>{item.recurrence.interval && item.recurrence.interval > 1 ? `Every ${item.recurrence.interval} ${item.recurrence.frequency}` : `${item.recurrence.frequency}`}</Text>
+                                    ) : null}
                                 </View>
                                 <Text style={styles.amount}>€{(item.amount / 100).toFixed(2)}</Text>
                             </View>
@@ -66,4 +72,5 @@ const styles = StyleSheet.create({
     item: { padding: 12, borderBottomWidth: 1, borderColor: '#eee', flexDirection: 'row', justifyContent: 'space-between' },
     title: { fontSize: 16 },
     amount: { fontSize: 16, fontWeight: '600' }
+    , recurrence: { fontSize: 12, color: '#666' }
 });
