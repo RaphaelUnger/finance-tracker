@@ -2,17 +2,15 @@
 // Uses tesseract.js worker for JS/WASM OCR, with a fallback hook for native ML Kit bindings.
 // This file is a small, copyable example and not a production-ready module.
 
-import type { Worker, CreateWorkerOptions } from 'tesseract.js';
-
 export type OCRResult = { text: string };
 
 // Deferred import to avoid bundling unless used
-async function createTesseractWorker(): Promise<Worker> {
+async function createTesseractWorker(): Promise<any> {
     const tesseract = await import('tesseract.js');
     const worker = await tesseract.createWorker({
         logger: (m: any) => console.debug('[tesseract]', m)
-    } as CreateWorkerOptions);
-    return worker as unknown as Worker;
+    } as any);
+    return worker;
 }
 
 export async function recognizeWithTesseract(uri: string): Promise<OCRResult> {

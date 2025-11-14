@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, Button, Image, ActivityIndicator, Alert } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import type { NavProps } from '../types/navigation';
 import { detectText } from '../services/ocrService';
 import receiptParser from '../services/receiptParser';
 import { increment } from '../services/analytics';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Scan'>;
+type Props = NavProps;
 
-const Scan: React.FC<Props> = ({ navigation }) => {
+function Scan({ navigation }: Props) {
     const [busy, setBusy] = useState(false);
-    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [imageUri, setImageUri] = useState(null as string | null);
 
     async function pickImage() {
         setBusy(true);

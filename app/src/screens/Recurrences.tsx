@@ -1,15 +1,14 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, FlatList, Button, StyleSheet, Alert } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import type { NavProps } from '../types/navigation';
 import { TransactionService } from '../services/transactionService';
 import type { Transaction } from '../services/transactionService';
 import { rollbackGeneratedFor } from '../services/recurrenceService';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Recurrences'>;
+type Props = NavProps;
 
-const Recurrences: React.FC<Props> = ({ navigation }) => {
-    const [rules, setRules] = useState<Transaction[]>([]);
+function Recurrences({ navigation }: Props) {
+    const [rules, setRules] = useState([] as Transaction[]);
 
     const load = useCallback(async () => {
         const svc = await TransactionService.getInstanceAsync();
@@ -31,8 +30,8 @@ const Recurrences: React.FC<Props> = ({ navigation }) => {
             ) : (
                 <FlatList
                     data={rules}
-                    keyExtractor={r => r.id}
-                    renderItem={({ item }) => (
+                    keyExtractor={(r: Transaction) => r.id}
+                    renderItem={({ item }: { item: Transaction }) => (
                         <View style={styles.row}>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.title}>{item.title}</Text>

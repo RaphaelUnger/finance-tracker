@@ -7,6 +7,7 @@ import Scan from './screens/Scan';
 import ScanReview from './screens/ScanReview';
 import Recurrences from './screens/Recurrences';
 import { runGenerator } from './services/recurrenceService';
+import Reports from './screens/Reports';
 
 export type RootStackParamList = {
     List: undefined;
@@ -14,9 +15,10 @@ export type RootStackParamList = {
     Scan: undefined;
     ScanReview: { suggestion: any; imageUri?: string } | undefined;
     Recurrences: undefined;
+    Reports: undefined;
 };
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Stack = createNativeStackNavigator();
 
 export default function App() {
     useEffect(() => {
@@ -37,6 +39,7 @@ export default function App() {
                 <Stack.Screen name="Scan" component={Scan} options={{ title: 'Scan Receipt' }} />
                 <Stack.Screen name="ScanReview" component={ScanReview} options={{ title: 'Review Receipt' }} />
                 <Stack.Screen name="Recurrences" component={Recurrences} options={{ title: 'Recurring rules' }} />
+                <Stack.Screen name="Reports" component={Reports} options={{ title: 'Reports' }} />
             </Stack.Navigator>
         </NavigationContainer>
     );

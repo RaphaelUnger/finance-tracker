@@ -2,17 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, Platform, Switch } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
-import { format } from 'date-fns';
 import { nextOccurrence } from '../services/recurrenceService';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import type { NavProps } from '../types/navigation';
 import { TransactionService } from '../services/transactionService';
 import { Picker } from '@react-native-picker/picker';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Form'>;
+type Props = NavProps;
 
-const TransactionForm: React.FC<Props> = ({ navigation, route }) => {
-    const [svc, setSvc] = useState<any>(null);
+function TransactionForm({ navigation, route }: Props) {
+    const [svc, setSvc] = useState(null as any);
     useEffect(() => {
         TransactionService.getInstanceAsync().then((s) => setSvc(s));
     }, []);
@@ -22,7 +20,7 @@ const TransactionForm: React.FC<Props> = ({ navigation, route }) => {
     const [date, setDate] = useState('');
     const [showPicker, setShowPicker] = useState(false);
     const [recurring, setRecurring] = useState(false);
-    const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+    const [frequency, setFrequency] = useState('monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly');
     const [interval, setInterval] = useState('1');
 
     useEffect(() => {
@@ -86,7 +84,7 @@ const TransactionForm: React.FC<Props> = ({ navigation, route }) => {
                     value={date ? new Date(date) : new Date()}
                     mode="date"
                     display={Platform.OS === 'android' ? 'calendar' : 'spinner'}
-                    onChange={(e, d) => {
+                    onChange={(e: any, d: any) => {
                         setShowPicker(Platform.OS === 'ios');
                         if (d) setDate(format(d, 'yyyy-MM-dd'));
                     }}
@@ -101,7 +99,7 @@ const TransactionForm: React.FC<Props> = ({ navigation, route }) => {
                     <View style={{ marginBottom: 8 }}>
                         <Text>Frequency</Text>
                         <View style={{ borderWidth: 1, borderColor: '#ddd', marginBottom: 8 }}>
-                            <Picker selectedValue={frequency} onValueChange={(v) => setFrequency(v as any)}>
+                            <Picker selectedValue={frequency} onValueChange={(v: any) => setFrequency(v as any)}>
                                 <Picker.Item label="Daily" value="daily" />
                                 <Picker.Item label="Weekly" value="weekly" />
                                 <Picker.Item label="Monthly" value="monthly" />

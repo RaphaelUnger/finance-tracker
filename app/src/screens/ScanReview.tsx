@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Image, Alert } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import type { NavProps } from '../types/navigation';
 import { TransactionService } from '../services/transactionService';
 import { increment } from '../services/analytics';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'ScanReview'> & any;
+type Props = NavProps;
 
-const ScanReview: React.FC<Props> = ({ navigation, route }) => {
+function ScanReview({ navigation, route }: Props) {
     const suggestion = route.params?.suggestion || {};
     const imageUri = route.params?.imageUri;
     const [title, setTitle] = useState(suggestion.title || '');

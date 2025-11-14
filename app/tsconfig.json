@@ -2,13 +2,18 @@
     "compilerOptions": {
         "target": "ESNext",
         "module": "ESNext",
-        "jsx": "react-jsx",
+        "jsx": "react-native",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "moduleResolution": "node",
         "resolveJsonModule": true,
         "allowSyntheticDefaultImports": true,
+        "types": [
+            "react",
+            "react-native",
+            "jest"
+        ],
         "baseUrl": "./",
         "paths": {
             "@/*": [

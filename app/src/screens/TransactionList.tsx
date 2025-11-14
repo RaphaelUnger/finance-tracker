@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, Button, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import type { NavProps } from '../types/navigation';
 import { TransactionService } from '../services/transactionService';
 import { runGenerator } from '../services/recurrenceService';
 import type { Transaction } from '../services/transactionService';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'List'>;
+type Props = NavProps;
 
-const TransactionList: React.FC<Props> = ({ navigation }) => {
-    const [items, setItems] = useState<Transaction[]>([]);
+function TransactionList({ navigation }: Props) {
+    const [items, setItems] = useState([] as Transaction[]);
     const [refreshing, setRefreshing] = useState(false);
 
     const load = useCallback(async () => {
@@ -46,9 +45,9 @@ const TransactionList: React.FC<Props> = ({ navigation }) => {
             ) : (
                 <FlatList
                     data={items}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item: Transaction) => item.id}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-                    renderItem={({ item }) => (
+                    renderItem={({ item }: { item: Transaction }) => (
                         <TouchableOpacity onPress={() => navigation.navigate('Form', { id: item.id })}>
                             <View style={styles.item}>
                                 <View>
