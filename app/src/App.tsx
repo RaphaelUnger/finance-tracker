@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import TransactionList from './screens/TransactionList';
@@ -8,6 +8,9 @@ import ScanReview from './screens/ScanReview';
 import Recurrences from './screens/Recurrences';
 import { runGenerator } from './services/recurrenceService';
 import Reports from './screens/Reports';
+import React, { useEffect, useState } from 'react';
+import LockScreen from './screens/LockScreen';
+import * as LockService from './services/lockService';
 
 export type RootStackParamList = {
     List: undefined;
@@ -21,6 +24,9 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+    const [unlocked, setUnlocked] = useState(false);
+    const [loadingLock, setLoadingLock] = useState(true);
+
     useEffect(() => {
         // run generator once on app start to materialize due recurring transactions
         (async () => {
@@ -31,6 +37,23 @@ export default function App() {
             }
         })();
     }, []);
+
+    useEffect(() => {
+        (async () => {
+            const has = await LockService.hasPin();
+            if (!has) {
+                setUnlocked(true);
+            }
+            setLoadingLock(false);
+        })();
+    }, []);
+
+    if (loadingLock) return null;
+
+    if (!unlocked) {
+        return <LockScreen onUnlock={() => setUnlocked(true)} />;
+    }
+
     return (
         <NavigationContainer>
             <Stack.Navigator initialRouteName="List">

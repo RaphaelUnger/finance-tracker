@@ -72,7 +72,7 @@ export function validateRow(row: Record<string, string>, mapping: Record<string,
 }
 
 // mapping: object where keys are target fields and values are header names
-export async function importCsvWithMapping(csvText: string, mapping: Record<string, string | undefined>, opts?: { skipHeader?: boolean }): Promise<{ created: number; errors: number }> {
+export async function importCsvWithMappingWithStats(csvText: string, mapping: Record<string, string | undefined>, opts?: { skipHeader?: boolean }): Promise<{ created: number; errors: number }> {
     const svc = await TransactionService.getInstanceAsync();
     const { header, rows } = parseCsv(csvText);
     let created = 0;
@@ -95,4 +95,10 @@ export async function importCsvWithMapping(csvText: string, mapping: Record<stri
         } catch (e) { errors++; }
     }
     return { created, errors };
+}
+
+// Backwards-compatible wrapper: original callers/tests expect a number (created count)
+export async function importCsvWithMapping(csvText: string, mapping: Record<string, string | undefined>, opts?: { skipHeader?: boolean }): Promise<number> {
+    const res = await importCsvWithMappingWithStats(csvText, mapping, opts);
+    return res.created;
 }

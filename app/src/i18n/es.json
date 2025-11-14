@@ -1,0 +1,20 @@
+{
+    "create_backup": "Crear copia de seguridad (exportar)",
+    "import_backup": "Importar copia de seguridad desde archivo",
+    "set_demo_pin": "Establecer PIN demo = 1234",
+    "enable_biometrics": "Habilitar biometría",
+    "disable_biometrics": "Desactivar biometría",
+    "enter_pin_to_unlock": "Introduzca PIN para desbloquear",
+    "set_app_pin": "Establecer PIN de la app",
+    "pin_set": "PIN establecido",
+    "backup_saved": "Copia de seguridad guardada",
+    "backup_failed": "Error al exportar copia de seguridad",
+    "export_failed": "Exportación fallida",
+    "import_failed": "Importación fallida",
+    "import_complete": "Importación completada",
+    "password_mismatch": "Las contraseñas no coinciden",
+    "password_too_short": "La contraseña debe tener al menos 6 caracteres",
+    "biometric_not_available": "Biometría no disponible",
+    "wrong_pin": "PIN incorrecto",
+    "unlock_with_biometrics": "Desbloquear con biometría"
+}

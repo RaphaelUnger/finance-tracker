@@ -1,0 +1,20 @@
+{
+    "create_backup": "Create backup (export)",
+    "import_backup": "Import backup from file",
+    "set_demo_pin": "Set demo PIN = 1234",
+    "enable_biometrics": "Enable Biometrics",
+    "disable_biometrics": "Disable Biometrics",
+    "enter_pin_to_unlock": "Enter PIN to unlock",
+    "set_app_pin": "Set App PIN",
+    "pin_set": "PIN set",
+    "backup_saved": "Backup saved",
+    "backup_failed": "Backup failed",
+    "export_failed": "Export failed",
+    "import_failed": "Import failed",
+    "import_complete": "Import complete",
+    "password_mismatch": "Passwords do not match",
+    "password_too_short": "Password must be at least 6 characters",
+    "biometric_not_available": "Biometrics not available",
+    "wrong_pin": "Wrong PIN",
+    "unlock_with_biometrics": "Unlock with biometrics"
+}
