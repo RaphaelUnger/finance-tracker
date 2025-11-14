@@ -15,4 +15,13 @@ setup guide: https://github.com/bmad-code-org/BMAD-METHOD/blob/main/src/modules/
 5. tester
 
 
-Reflection: Difficult setup, required multiple reinstallations and inits to work with agents properly.
+Reflection: Difficult setup, required multiple reinstallations and inits to work with agents properly. 
+Architectural technology decisions decided completly on their own (React Native with Expo). 
+Brainstorming and documentation is far better than development. Development seems more to be a guess of 
+what could work and if not is changed later on instead of following a structured process, even when strictly 
+holding on to each iteration before the next one starts. Even though an iteration is complete, the AI would
+continue to work on tasks which are not part of an iteration but might make sense, even if not planned in any 
+requirements. It is necessary to prompt if an iteration is done (meets DoD criteria) multiple times in order to
+get a proper answer. The implementation itself may be quick or slow depending on any tasks the AI is stuck on, which 
+could lead to infinite loops in which similar options are tried but none of them works. In these cases a dialog 
+is displayed after a while if the work should be continued or paused due to many requests.
