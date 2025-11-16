@@ -8,9 +8,11 @@ type I18nContextValue = {
     available: string[];
 };
 
-const ctx = createContext<I18nContextValue | null>(null);
+const ctx = createContext(null as I18nContextValue | null);
 
-export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+type I18nProviderProps = { children?: any };
+
+export function I18nProvider({ children }: I18nProviderProps) {
     const [locale, setLocaleState] = useState(i18n.getLocale());
 
     useEffect(() => {
@@ -28,7 +30,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const value: I18nContextValue = { locale, setLocale, t: i18n.t, available: i18n.getAvailableLocales() };
     return <ctx.Provider value={value}>{children}</ctx.Provider>;
-};
+}
 
 export function useI18n() {
     const v = useContext(ctx);

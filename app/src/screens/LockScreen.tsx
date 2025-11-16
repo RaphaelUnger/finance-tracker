@@ -5,9 +5,9 @@ import { useI18n } from '../i18n/react';
 
 export default function LockScreen({ onUnlock }: { onUnlock: () => void }) {
     const [pin, setPin] = useState('');
-    const [mode, setMode] = useState<'enter' | 'set'>('enter');
-    const [biometricAvailable, setBiometricAvailable] = useState(false);
-    const [biometricEnabled, setBiometricEnabled] = useState(false);
+    const [mode, setMode] = useState('enter' as 'enter' | 'set');
+    const [biometricAvailable, setBiometricAvailable] = useState(false as boolean);
+    const [biometricEnabled, setBiometricEnabled] = useState(false as boolean);
 
     const { t } = useI18n();
 

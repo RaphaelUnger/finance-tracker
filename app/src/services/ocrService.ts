@@ -3,12 +3,13 @@
 // This file is a small, copyable example and not a production-ready module.
 
 export type OCRResult = { text: string };
+import logger from '../utils/logger';
 
 // Deferred import to avoid bundling unless used
 async function createTesseractWorker(): Promise<any> {
     const tesseract = await import('tesseract.js');
     const worker = await tesseract.createWorker({
-        logger: (m: any) => console.debug('[tesseract]', m)
+        logger: (m: any) => logger.debug('[tesseract]', m)
     } as any);
     return worker;
 }
@@ -25,7 +26,7 @@ export async function recognizeWithTesseract(uri: string): Promise<OCRResult> {
         try {
             await worker.terminate();
         } catch (e) {
-            // ignore
+            logger.debug('worker terminate failed', e);
         }
     }
 }
@@ -44,7 +45,7 @@ export async function detectText(uri: string, preferNative = false): Promise<OCR
         try {
             return await recognizeWithNativeFallback(uri);
         } catch (err) {
-            console.warn('Native OCR failed, falling back to tesseract', err);
+            logger.warn('Native OCR failed, falling back to tesseract', err);
             return recognizeWithTesseract(uri);
         }
     }

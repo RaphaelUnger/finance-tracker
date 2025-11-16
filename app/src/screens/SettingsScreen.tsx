@@ -8,10 +8,10 @@ import { Picker } from '@react-native-picker/picker';
 
 
 export default function SettingsScreen() {
-    const [biometricAvailable, setBiometricAvailable] = useState(false);
-    const [biometricEnabled, setBiometricEnabled] = useState(false);
-    const [availableLocales, setAvailableLocales] = useState<string[]>([]);
-    const [locale, setLocale] = useState<string>(i18n.getLocale());
+    const [biometricAvailable, setBiometricAvailable] = useState(false as boolean);
+    const [biometricEnabled, setBiometricEnabled] = useState(false as boolean);
+    const [availableLocales, setAvailableLocales] = useState([] as string[]);
+    const [locale, setLocale] = useState(i18n.getLocale() as string);
     const { t, setLocale: setLocaleCtx } = useI18n();
 
     useEffect(() => {
@@ -32,7 +32,7 @@ export default function SettingsScreen() {
 
     const [importModalVisible, setImportModalVisible] = useState(false);
     const [importPassword, setImportPassword] = useState('');
-    const [importFileContent, setImportFileContent] = useState<string | null>(null);
+    const [importFileContent, setImportFileContent] = useState(null as string | null);
 
     const setPin = async () => {
         await LockService.setPin('1234');
@@ -108,7 +108,7 @@ export default function SettingsScreen() {
                     setLocale(v);
                     setLocaleCtx(v);
                 }}>
-                    {availableLocales.map(l => <Picker.Item key={l} label={l} value={l} />)}
+                    {availableLocales.map((l: string) => <Picker.Item key={l} label={l} value={l} />)}
                 </Picker>
             </View>
             <Button title={t('create_backup')} onPress={onOpenExport} />

@@ -19,14 +19,9 @@ export type Transaction = {
 const KEY = 'ft_transactions_v1';
 
 // Helper: wrap expo-sqlite executeSql in a Promise
-async function tryRequire(name: string) {
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        return require(name);
-    } catch (e) {
-        return null;
-    }
-}
+// NOTE: Metro bundler rejects dynamic require calls like require(name).
+// We intentionally use a literal require('expo-sqlite') inside init() so
+// the bundler can statically analyze the dependency.
 
 class AsyncStorageRepo {
     async list(): Promise<Transaction[]> {
@@ -230,7 +225,14 @@ export class TransactionService {
 
     private async init() {
         if (this.repo) return;
-        const SQLite = await tryRequire('expo-sqlite');
+        let SQLite: any = null;
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            SQLite = require('expo-sqlite');
+        } catch (e) {
+            SQLite = null;
+        }
+
         if (SQLite && SQLite.openDatabase) {
             const repo = new SQLiteRepo(SQLite);
             await repo.init();
