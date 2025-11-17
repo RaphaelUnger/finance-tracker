@@ -1,0 +1,46 @@
+name: App CI
+
+on:
+  push:
+    paths:
+      - 'app/**'
+  pull_request:
+    paths:
+      - 'app/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/app/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install (app)
+        working-directory: ./app
+        run: |
+          set -euo pipefail
+          npm ci
+
+      - name: Run tests (app)
+        working-directory: ./app
+        run: |
+          set -euo pipefail
+          npm test --silent
+
+      - name: TypeScript check (app)
+        working-directory: ./app
+        run: |
+          set -euo pipefail
+          if [ -f tsconfig.json ]; then npx tsc --noEmit; else echo "no tsconfig"; fi

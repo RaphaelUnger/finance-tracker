@@ -40,4 +40,5 @@ on the level specified in the requirements as well as design and far beneath the
 be done and iterating over each problem, than the app would not work at all, not a single action, just a plain page.
 
 After about 50 prompt iterations by testing and telling what to fix, the app looks like a buggy prototype instead of
-a non-working empty app, but far from a finance-tracker which could be deployed productively.
+a non-working empty app, but far from a finance-tracker which could be deployed productively. Additionally tests and 
+a Github Actions workflow was added.

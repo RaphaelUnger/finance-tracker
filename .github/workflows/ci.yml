@@ -11,95 +11,157 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    name: Build & Test (auto-detect)
+  pr-fast:
+    name: PR — Fast checks
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (for Node/TS projects)
+      - name: Use Node.js 18
         uses: actions/setup-node@v4
         with:
-          # uses .nvmrc if present, otherwise falls back to 18
           node-version: '18'
 
-      - name: Install dependencies and run lint/test if present
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-pr-${{ hashFiles('bmad/app/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies (app)
+        working-directory: ./bmad/app
+        run: |
+          set -euo pipefail
+          npm ci
+
+      - name: Run lint (if configured)
+        working-directory: ./bmad/app
         shell: bash
         run: |
           set -euo pipefail
-          echo "Looking for package.json..."
-          if [ -f package.json ]; then
-            echo "package.json found — treating as a Node project"
-            npm ci
-
-            # Run lint if a lint script exists
-            if node -e "const p=require('./package.json'); process.exit(!(p.scripts && p.scripts.lint));"; then
-              echo "Running npm run lint"
-              npm run lint
-            else
-              echo "No lint script found"
-            fi
-
-            # Run tests if a test script exists
-            if node -e "const p=require('./package.json'); process.exit(!(p.scripts && p.scripts.test));"; then
-              echo "Running npm test"
-              npm test
-            else
-              echo "No test script found"
-            fi
+          if node -e "const p=require('./package.json'); process.exit(!(p.scripts && p.scripts.lint));"; then
+            npm run lint
           else
-            echo "No package.json — skipping Node install/lint/test steps"
+            echo "No lint script in app/package.json"
           fi
 
-      - name: TypeScript check (if tsconfig.json present)
+      - name: Run fast unit tests (tests/ folder only)
+        working-directory: ./bmad/app
+        shell: bash
+        run: |
+          set -euo pipefail
+          if node -e "const p=require('./package.json'); process.exit(!(p.scripts && p.scripts.test));"; then
+            # Run only tests under the tests/ folder to keep PR runs fast
+            npm test --silent -- --testPathPattern=tests
+          else
+            echo "No test script in app/package.json"
+          fi
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-failure-artifacts
+          path: |
+            bmad/app/test-results/
+            bmad/app/coverage/
+          retention-days: 7
+
+  merge-full:
+    name: Merge — Full checks
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: []
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-main-${{ hashFiles('bmad/app/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies (app)
+        working-directory: ./bmad/app
+        run: |
+          set -euo pipefail
+          npm ci
+
+      - name: Run lint (if configured)
+        working-directory: ./bmad/app
+        shell: bash
+        run: |
+          set -euo pipefail
+          if node -e "const p=require('./package.json'); process.exit(!(p.scripts && p.scripts.lint));"; then
+            npm run lint
+          else
+            echo "No lint script in app/package.json"
+          fi
+
+      - name: Run full tests (app)
+        working-directory: ./bmad/app
+        shell: bash
+        run: |
+          set -euo pipefail
+          if node -e "const p=require('./package.json'); process.exit(!(p.scripts && p.scripts.test));"; then
+            npm test --silent
+          else
+            echo "No test script in app/package.json"
+          fi
+
+      - name: TypeScript check (app)
+        working-directory: ./bmad/app
         shell: bash
         run: |
           set -euo pipefail
           if [ -f tsconfig.json ]; then
-            echo "tsconfig.json found — running tsc --noEmit"
-            # install typescript if not present
-            if ! command -v tsc >/dev/null 2>&1; then
-              echo "tsc not found globally — installing typescript temporarily"
-              npm i --no-save typescript@latest
-            fi
             npx tsc --noEmit
           else
-            echo "No tsconfig.json — skipping TypeScript compile check"
+            echo "No tsconfig.json in app — skipping TypeScript check"
           fi
 
-      - name: Upload test artifacts (if any and on failure)
+      - name: Upload artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ci-failure-artifacts
+          name: merge-failure-artifacts
           path: |
-            test-results/
-            playwright-report/
-            coverage/
+            bmad/app/test-results/
+            bmad/app/coverage/
           retention-days: 7
 
   mobile-tests:
     name: Mobile tests
     runs-on: ubuntu-latest
-    needs: build-and-test
+    needs: merge-full
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Use Node.js 18
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      - name: Install and run mobile tests
+      - name: Install and run mobile tests (if any)
         shell: bash
         run: |
           set -euo pipefail
-          if [ -d mobile ]; then
-            cd mobile
+          if [ -d bmad/mobile ]; then
+            cd bmad/mobile
             if [ -f package.json ]; then
               npm ci
               if node -e "const p=require('./package.json'); process.exit(!(p.scripts && p.scripts.test));"; then
