@@ -46,6 +46,7 @@ export async function runGenerator(days = 30) {
     const all = await svc.list();
     const today = new Date();
     const windowEnd = format(addDays(today, days), 'yyyy-MM-dd');
+    let created = 0;
 
     for (const t of all) {
         if (!t.recurrence) continue;
@@ -61,6 +62,7 @@ export async function runGenerator(days = 30) {
             const fallback = existingList.find(x => x.date === occDate && x.title === t.title && x.amount === t.amount);
             if (fallback) continue;
             await svc.create({ title: t.title, amount: t.amount, date: occDate, generatedFrom: sourceId, generatedAt: new Date().toISOString() });
+            created++;
             // advance nextRun on rule to the next occurrence after occDate
             const next = nextOccurrence(occDate, t.recurrence);
             const updatedRec = { ...t.recurrence, nextRun: next } as Recurrence;
@@ -71,6 +73,7 @@ export async function runGenerator(days = 30) {
             }
         }
     }
+    return created;
 }
 
 // rollback: remove generated instances for a given recurrence rule id

@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Button, Alert, Modal, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Alert, Modal, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import ThemedButton from '../components/ThemedButton';
+import { useTheme } from '../theme';
 import * as BackupService from '../services/backupService';
 import * as LockService from '../services/lockService';
 import i18n from '../i18n';
 import { useI18n } from '../i18n/react';
 import { Picker } from '@react-native-picker/picker';
+import { getCapabilities } from '../services/ocrService';
 
 
 export default function SettingsScreen() {
@@ -24,8 +27,17 @@ export default function SettingsScreen() {
             try { await i18n.initI18n(); } catch (e) { }
             setAvailableLocales(i18n.getAvailableLocales());
             setLocale(i18n.getLocale());
+            // check OCR capabilities
+            try {
+                const caps = await getCapabilities();
+                // simple textual status
+                // workerAvailable && tesseractInstalled -> tesseract usable
+                // workerAvailable false -> recommend native
+                setOcrStatus(caps.workerAvailable && caps.tesseractInstalled ? 'tesseract' : (caps.workerAvailable ? 'missing_tesseract' : 'no_worker'));
+            } catch (e) { setOcrStatus('unknown'); }
         })();
     }, []);
+    const [ocrStatus, setOcrStatus] = useState('unknown');
     const [exportModalVisible, setExportModalVisible] = useState(false);
     const [exportPassword, setExportPassword] = useState('');
     const [exportPasswordConfirm, setExportPasswordConfirm] = useState('');
@@ -100,26 +112,37 @@ export default function SettingsScreen() {
         }
     };
 
+    const theme = useTheme();
+
     return (
-        <View style={{ padding: 16 }}>
-            <Text style={{ marginBottom: 8, fontWeight: '600' }}>{t('settings.locale')}</Text>
-            <View style={{ borderWidth: 1, borderColor: '#ddd', marginBottom: 12 }}>
-                <Picker selectedValue={locale} onValueChange={async (v: string) => {
-                    setLocale(v);
-                    setLocaleCtx(v);
-                }}>
-                    {availableLocales.map((l: string) => <Picker.Item key={l} label={l} value={l} />)}
-                </Picker>
+        <View style={{ padding: 16, backgroundColor: theme.colors.surface }}>
+            <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
+                <Text style={{ marginBottom: 8, fontWeight: '600', color: theme.colors.text }}>{t('settings.locale')}</Text>
+                <View style={{ borderWidth: 1, borderColor: theme.colors.cardBorder, marginBottom: 12, backgroundColor: theme.colors.surface }}>
+                    <Picker selectedValue={locale} onValueChange={async (v: string) => {
+                        // confirm locale change
+                        Alert.alert('Change language', `Switch app language to ${v}?`, [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'OK', onPress: async () => { setLocale(v); setLocaleCtx(v); i18n.persistLocale(v).catch(() => { }); } }
+                        ]);
+                    }}>
+                        {availableLocales.map((l: string) => <Picker.Item key={l} label={l} value={l} />)}
+                    </Picker>
+                </View>
+                <Text style={{ marginBottom: 6, color: theme.colors.muted }}>OCR status: {ocrStatus}</Text>
+                {ocrStatus !== 'tesseract' ? (
+                    <ThemedButton title={t('scan.ocr_install_hint')} onPress={() => Alert.alert('OCR setup', t('scan.ocr_install_hint'))} />
+                ) : null}
+                <ThemedButton title={t('create_backup')} onPress={onOpenExport} />
+                <View style={{ height: 12 }} />
+                <ThemedButton title={t('import_backup')} onPress={onPickImportFile} />
+                <View style={{ height: 12 }} />
+                <ThemedButton title={t('set_demo_pin')} onPress={setPin} />
+                <View style={{ height: 12 }} />
+                {biometricAvailable ? (
+                    <ThemedButton title={biometricEnabled ? t('disable_biometrics') : t('enable_biometrics')} onPress={toggleBiometric} />
+                ) : null}
             </View>
-            <Button title={t('create_backup')} onPress={onOpenExport} />
-            <View style={{ height: 12 }} />
-            <Button title={t('import_backup')} onPress={onPickImportFile} />
-            <View style={{ height: 12 }} />
-            <Button title={t('set_demo_pin')} onPress={setPin} />
-            <View style={{ height: 12 }} />
-            {biometricAvailable ? (
-                <Button title={biometricEnabled ? t('disable_biometrics') : t('enable_biometrics')} onPress={toggleBiometric} />
-            ) : null}
 
             {/* Export modal */}
             <Modal visible={exportModalVisible} animationType="slide" transparent>
@@ -154,6 +177,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+    card: { padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 12, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
     modalContent: { width: '90%', backgroundColor: '#fff', padding: 16, borderRadius: 8 },
     modalTitle: { fontWeight: '600', marginBottom: 12 },

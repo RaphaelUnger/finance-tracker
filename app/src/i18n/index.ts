@@ -8,7 +8,16 @@ const STORAGE_KEY = 'app.locale';
 
 export function setLocale(l: string) { if (LOCALES[l]) current = l; }
 export function getLocale() { return current; }
-export function t(key: string): string { return LOCALES[current][key] || LOCALES['en'][key] || key; }
+export function t(key: string, params?: Record<string, string | number>): string {
+    let txt = LOCALES[current][key] || LOCALES['en'][key] || key;
+    if (params) {
+        for (const k of Object.keys(params)) {
+            const re = new RegExp(`\\{${k}\\}`, 'g');
+            txt = txt.replace(re, String(params[k]));
+        }
+    }
+    return txt;
+}
 
 export function getAvailableLocales(): string[] { return Object.keys(LOCALES); }
 

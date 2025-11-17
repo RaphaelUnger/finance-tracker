@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert } from 'react-native';
+import ThemedButton from '../components/ThemedButton';
+import { useTheme } from '../theme';
 import * as LockService from '../services/lockService';
 import { useI18n } from '../i18n/react';
 
@@ -45,23 +47,27 @@ export default function LockScreen({ onUnlock }: { onUnlock: () => void }) {
         else Alert.alert(t('biometric_auth_failed'));
     };
 
+    const theme = useTheme();
+
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>{mode === 'set' ? t('set_app_pin') : t('enter_pin_to_unlock')}</Text>
-            <TextInput
-                value={pin}
-                onChangeText={setPin}
-                keyboardType="numeric"
-                secureTextEntry
-                style={styles.input}
-                placeholder={t('enter_pin_to_unlock')}
-            />
-            <Button title={mode === 'set' ? t('set_app_pin') : t('unlock')} onPress={submit} />
-            {biometricAvailable && biometricEnabled ? (
-                <View style={{ marginTop: 12 }}>
-                    <Button title={t('unlock_with_biometrics')} onPress={tryBiometric} />
-                </View>
-            ) : null}
+        <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
+            <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
+                <Text style={[styles.title, { color: theme.colors.text }]}>{mode === 'set' ? t('set_app_pin') : t('enter_pin_to_unlock')}</Text>
+                <TextInput
+                    value={pin}
+                    onChangeText={setPin}
+                    keyboardType="numeric"
+                    secureTextEntry
+                    style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.cardBorder }]}
+                    placeholder={t('enter_pin_to_unlock')}
+                />
+                <ThemedButton title={mode === 'set' ? t('set_app_pin') : t('unlock')} onPress={submit} />
+                {biometricAvailable && biometricEnabled ? (
+                    <View style={{ marginTop: 12 }}>
+                        <ThemedButton title={t('unlock_with_biometrics')} onPress={tryBiometric} />
+                    </View>
+                ) : null}
+            </View>
         </View>
     );
 }

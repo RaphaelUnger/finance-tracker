@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, TextInput, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ScrollView } from 'react-native';
+import ThemedButton from '../components/ThemedButton';
+import { useTheme } from '../theme';
 import type { NavProps } from '../types/navigation';
 import { exportMonthToCsv, importCsvToTransactions, parseCsv, importCsvWithMapping, importCsvWithMappingWithStats, validateRow } from '../services/exportService';
 import { Picker } from '@react-native-picker/picker';
@@ -40,23 +42,28 @@ function Reports({ navigation }: Props) {
 
     const { t } = useI18n();
 
+    const theme = useTheme();
+
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.h1}>{t('reports.monthlyReport')}</Text>
-            <View style={styles.row}>
-                <Text>{t('reports.year')}</Text>
-                <TextInput style={styles.input} value={String(year)} onChangeText={(v: string) => setYear(Number(v) || year)} keyboardType="numeric" />
-                <Text>{t('reports.month')}</Text>
-                <TextInput style={styles.input} value={String(month)} onChangeText={(v: string) => setMonth(Number(v) || month)} keyboardType="numeric" />
-                <Button accessibilityLabel={t('reports.exportCsv')} title={t('reports.exportCsv')} onPress={async () => {
-                    try {
-                        const csv = await exportMonthToCsv(year, month);
-                        // for now, just show an alert with the CSV length and copy to clipboard could be added
-                        Alert.alert(t('reports.csvExportTitle'), `${t('reports.generatedLines')}: ${csv.split('\n').length}`);
-                    } catch (e: any) {
-                        Alert.alert(t('reports.exportFailed'), e.message || String(e));
-                    }
-                }} />
+        <ScrollView style={[styles.container, { backgroundColor: theme.colors.surface }]}>
+            <View style={[styles.screenHeader, { backgroundColor: theme.colors.primary }]}>
+                <Text style={[styles.screenHeaderTitle, { color: theme.colors.onPrimary }]}>{t('reports.monthlyReport')}</Text>
+            </View>
+            <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
+                <View style={styles.row}>
+                    <Text>{t('reports.year')}</Text>
+                    <TextInput style={styles.input} value={String(year)} onChangeText={(v: string) => setYear(Number(v) || year)} keyboardType="numeric" />
+                    <Text>{t('reports.month')}</Text>
+                    <TextInput style={styles.input} value={String(month)} onChangeText={(v: string) => setMonth(Number(v) || month)} keyboardType="numeric" />
+                    <ThemedButton accessibilityLabel={t('reports.exportCsv')} title={t('reports.exportCsv')} onPress={async () => {
+                        try {
+                            const csv = await exportMonthToCsv(year, month);
+                            Alert.alert(t('reports.csvExportTitle'), `${t('reports.generatedLines')}: ${csv.split('\n').length}`);
+                        } catch (e: any) {
+                            Alert.alert(t('reports.exportFailed'), e.message || String(e));
+                        }
+                    }} />
+                </View>
             </View>
             <View style={{ marginVertical: 12 }}>
                 <Text style={styles.h2}>{t('reports.categoryTotals')}</Text>
@@ -93,7 +100,7 @@ function Reports({ navigation }: Props) {
                 <Text>{t('reports.importInstructions')}</Text>
                 <TextInput accessibilityLabel={t('reports.csvInput')} value={csvIn} onChangeText={setCsvIn} multiline style={styles.textarea} placeholder={t('reports.csvPlaceholder')} />
                 <View style={{ marginVertical: 8 }}>
-                    <Button accessibilityLabel={t('reports.previewCsv')} title={t('reports.previewCsv')} onPress={() => {
+                    <ThemedButton accessibilityLabel={t('reports.previewCsv')} title={t('reports.previewCsv')} onPress={() => {
                         if (!csvIn.trim()) return Alert.alert(t('reports.noCsv'), t('reports.pleasePasteCsv'));
                         const p = parseCsv(csvIn);
                         setPreview({ header: p.header, rows: p.rows.map(r => p.header.map(h => r[h] || '')) });
@@ -105,7 +112,7 @@ function Reports({ navigation }: Props) {
                         setValidation(vals);
                     }} />
                     <View style={{ height: 8 }} />
-                    <Button accessibilityLabel={t('reports.pickCsvFile')} title={t('reports.pickCsvFile')} onPress={async () => {
+                    <ThemedButton accessibilityLabel={t('reports.pickCsvFile')} title={t('reports.pickCsvFile')} onPress={async () => {
                         try {
                             // dynamic import to avoid hard dependency
                             const docPicker: any = await import('expo-document-picker');
@@ -145,7 +152,7 @@ function Reports({ navigation }: Props) {
                             </View>
                         ))}
 
-                        <Button accessibilityLabel={t('reports.importMappedCsv')} title={t('reports.importMappedCsv')} onPress={async () => {
+                        <ThemedButton accessibilityLabel={t('reports.importMappedCsv')} title={t('reports.importMappedCsv')} onPress={async () => {
                             try {
                                 const res = await importCsvWithMappingWithStats(csvIn, mapping as any);
                                 Alert.alert(t('reports.importComplete'), `${t('reports.importedTransactions')}: ${res.created}. ${t('reports.importErrors')}: ${res.errors}.`);
@@ -165,6 +172,8 @@ export default Reports;
 
 const styles = StyleSheet.create({
     container: { flex: 1, padding: 12 },
+    screenHeader: { padding: 12, borderTopLeftRadius: 8, borderTopRightRadius: 8 },
+    screenHeaderTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
     h1: { fontSize: 20, fontWeight: '600', marginBottom: 8 },
     h2: { fontSize: 16, fontWeight: '600', marginBottom: 6 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 8 },

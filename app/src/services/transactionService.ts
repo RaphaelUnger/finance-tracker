@@ -2,6 +2,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { v4 as uuidv4 } from 'uuid';
 import type { Recurrence } from './models';
 
+// safe id generator: prefer uuidv4 (crypto), but fall back to a non-crypto id
+function safeId(): string {
+    try {
+        return uuidv4();
+    } catch (e) {
+        // fallback: use time + random string (not cryptographically strong)
+        return `id_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+    }
+}
+
 export type Transaction = {
     id: string;
     title: string;
@@ -53,7 +63,7 @@ class AsyncStorageRepo {
     }
 
     async create(input: Omit<Transaction, 'id'>): Promise<Transaction> {
-        const tx: Transaction = { ...input, id: uuidv4(), createdAt: new Date().toISOString() };
+        const tx: Transaction = { ...input, id: safeId(), createdAt: new Date().toISOString() };
         const all = await this.list();
         all.unshift(tx);
         await AsyncStorage.setItem(KEY, JSON.stringify(all));
@@ -170,7 +180,7 @@ class SQLiteRepo {
     }
 
     async create(input: Omit<Transaction, 'id'>): Promise<Transaction> {
-        const id = uuidv4();
+        const id = safeId();
         const createdAt = new Date().toISOString();
         const rec = input.recurrence ? JSON.stringify(input.recurrence) : null;
         const genFrom = (input as any).generatedFrom || null;
