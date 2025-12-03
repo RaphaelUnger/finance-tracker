@@ -1,13 +1,13 @@
 # Finance Tracker App
 
 A privacy-first, offline-capable mobile application for managing personal finances.  
-The app allows users to track expenses and incomes, categorize transactions, analyze monthly reports, and even scan receipts for automatic entry — all without requiring an internet connection.
+The app allows users to track expenses and incomes, categorize transactions, analyze monthly reports, and even scan receipts for automatic entry, all without requiring an internet connection.
 
 The goal of the project is to implement a finance tracker mobile application by only using AI tools and not writing a single line of code manually. The workflow is based on the traditional software development lifecycle (SDLC) phases: Analysis, Design, Implementation, Testing and Deployment. In each phase AI tools are used to generate the necessary artifacts and code.
 
 The project was implemented by using two different approaches with each relying on different AI tools:
 * BMAD approach and _GitHub Copilot with GPT 5mini_.
-* Manual AI-prompting approach and _@Emil-AI_.
+* Manual AI-prompting approach and GitHub Copilot with Claude Sonnet 4.
 
 ## BMAD Approach
 BMad Method (BMM) helps building software through guided workflows with specialized AI agents. The process follows four phases:
@@ -57,6 +57,51 @@ a project with up-to-date dependencies and compatible versions and ensuring the 
 
 AI is very helpful in generating ideas, creating initial drafts, and providing suggestions. However, for complex projects requiring precise implementation and adherence to specific requirements, the current state of AI tools may not yet be sufficient to fully automate the development process without significant human intervention. In my opinion, a developer might not be as faster but would definitely produce higher quality work which actually meets the requirements and design specifications.
 
+---
 
 ## Manual AI-Prompting Approach
-@Emil
+
+### Introduction
+
+For this project, I used a manual prompting approach with GitHub Copilot in combination with Claude Sonnet 4 acting as an autonomous agent. The goal was to develop the application with strong AI support while still maintaining human guidance and control. This report reflects on the process, the experiences gained, and the challenges encountered during the development.
+
+The manual prompting strategy was designed so that the AI would not begin coding immediately. Instead, it first had to create structured planning documents that served as the foundation for all subsequent implementation steps.
+
+1. Phase - Creation of Initial Planning Documents
+At the beginning, all necessary artifacts were generated based on the existing README and the provided requirements.
+
+2. Phase - Creation of an Empty File Structure
+Next, the complete project folder structure was created. The files were initially empty to ensure that content could later be added incrementally and in a controlled manner.
+
+3. Phase - Iterative Implementation in Sprints
+The implementation phase followed an iterative, sprint-based approach. Each sprint had clearly defined tasks, and the AI received detailed instructions for every step.
+
+4. Phase - Testing & Debugging
+After all sprint, tests were conducted and any errors were fed back to the AI, which was then instructed to fix them.
+
+### Experiences with AI-Assisted Development
+
+Overall, the implementation phase worked reasonably well, especially in the early stages. The AI agent had full freedom in choosing architecture and technologies, which allowed it to generate structures and generated code quickly and efficiently.
+
+However, it became apparent that the AI struggled significantly when tasks involved complex interactions between multiple files or when large, interdependent code segments were required. In these cases, errors accumulated more quickly, and the AI's reliability decreased.
+
+### Challenges and Limitations
+
+During the project, several challenges became clear when working with the AI. One of the biggest issues was that the AI often did not follow the planned workflow. Even with clear instructions, it sometimes completed tasks too early, skipped steps, or worked on features that were supposed to come later. This caused confusion and made the overall structure harder to control.
+
+Another problem was that the AI sometimes produced incorrect or imaginary information. For example, it suggested library versions that did not exist, added dependencies that could not be installed, or misunderstood error messages. These mistakes were usually not fixed by the AI itself. I often had to point out the exact problem before it was corrected.
+
+Setting up the project was also more difficult than expected. Many of the commands the AI suggested did not work, which led to several failed attempts to start the project. This required sending multiple error logs back to the AI until a working solution was found. Because the mobile setup was too complex, I eventually switched to a web-based version.
+
+Over time, the AI also tended to forget earlier rules or decisions. It sometimes overwrote previous plans or reintroduced mistakes that had already been solved. This made the development process harder to manage and required constant supervision to keep everything consistent.
+
+Side Note: At the beginning, I tried to run the project using Junie Pro, but it was not able to create the required artifacts. The AI Agent took a very long time to load, often ran into timeouts, and repeatedly lost its context. After spending about four hours trying without success, I switched to GitHub Copilot instead, since it had already proven to be faster and more reliable during class.
+
+### Conclusion
+
+In summary, using GitHub Copilot together with Claude Sonnet 4 was very helpful, especially at the beginning of the project. The AI was good at creating planning documents, setting up the initial project structure, and writing smaller pieces of code.
+
+As the project became more complex, however, the weaknesses of the AI became more noticeable. It often lost track of previous information, did not follow the planned steps, had trouble fixing errors, and sometimes produced incorrect or made-up details. Because of this, it was difficult to depend on the AI for larger or more connected parts of the project without constant human guidance.
+
+Overall, the manual prompting approach works well for small tasks, documentation, and quick prototypes. But at the moment, it is not reliable enough to fully handle the development of more complex applications without significant human involvement.
+
