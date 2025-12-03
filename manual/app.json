@@ -1,0 +1,10 @@
+{
+  "name": "FinanceTrackerManual",
+  "displayName": "Finance Tracker",
+  "version": "1.0.0",
+  "description": "Privacy-first offline finance tracking mobile app",
+  "author": "Finance Tracker Team",
+  "license": "MIT",
+  "main": "index.js"
+}
+

@@ -1,0 +1,9 @@
+gradle.properties
+*.lock
+build/
+.gradle/
+local.properties
+*.iml
+.idea/
+*.hprof
+
