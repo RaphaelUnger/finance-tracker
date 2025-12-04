@@ -6,7 +6,7 @@ The app allows users to track expenses and incomes, categorize transactions, ana
 The goal of the project is to implement a finance tracker mobile application by only using AI tools and not writing a single line of code manually. The workflow is based on the traditional software development lifecycle (SDLC) phases: Analysis, Design, Implementation, Testing and Deployment. In each phase AI tools are used to generate the necessary artifacts and code.
 
 The project was implemented by using two different approaches with each relying on different AI tools:
-* BMAD approach and _GitHub Copilot with GPT 5mini_.
+* BMAD approach and _GitHub Copilot with GPT 4.1_.
 * Manual AI-prompting approach and GitHub Copilot with Claude Sonnet 4.
 
 ## BMAD Approach
@@ -28,34 +28,23 @@ For each development phase, the corresponding BMAD agents were used to generate 
 2. _Solutioning_: Architect agent and UX-Designer agent
 3. _Implementation and Testing_: Developer agent
 
-### Execution of the BMAD Approach with GitHub Copilot and GPT-5mini
+### Execution of the BMAD Approach with GitHub Copilot and GPT-4.1
 The setup was difficult and required multiple reinstallations and initializations to work with agents properly. 
 
 The planning and solutioning phase could be solved with ease. However, the architectural technology decisions where decided completely on their own (React Native app with Expo). The implementation phase was more difficult. The developer agent had problems to follow the requirements and clear specifications like design and an iterative development plan.
 
 #### Development Challenges
-Development seems more to be a guess of what could work and if not is changed later on instead of following a structured process, even when strictly holding on to each iteration before the next one starts. Even though an iteration is complete, the AI would continue to work on tasks which are not part of an iteration but might make sense, even if not planned in any requirements. It is necessary to prompt if an iteration is done (meets DoD criteria) multiple times in order to get a proper answer. The implementation itself may be quick or slow depending on any tasks the AI is stuck on, which could lead to infinite loops in which similar options are tried but none of them works. In these cases a dialog is displayed after a while if the work should be continued or paused due to many requests.
-continued or paused due to many requests.
+Development seems more to be a guess of what could work and if not is changed later on instead of following a structured process, even when strictly holding on to each iteration before the next one starts. Even though an iteration is complete, the AI would continue to work on tasks which are not part of an iteration but might make sense, even if not planned in any requirements. It is necessary to prompt if an iteration is done (meets DoD criteria) multiple times in order to get a proper answer. The implementation itself may be quick or slow depending on any tasks the AI is stuck on, which could lead to infinite loops in which similar options are tried but none of them work. In these cases a dialog is displayed after a while if the work should be continued or paused due to many requests.
 
-The package.json file contains many old dependencies by default (React 18 instead of 19, Expo 48 instead of 54), 
-some of which are even incompatible and 42 high vulnerabilities. This could only be resolved manually. Could not
-compile, got warnings because of the many incompatible versions which might not work together as well as
-a red error page that modules are missing. After multiple tries the app finally started, was ugly and was not working 
-at all. Many prompts and several trail and error rounds later the design looked better and you could finally add a 
-transaction, which is opened in a new page, does not store the amount and no category can be chosen (still buggy).
-Even though development should be finished, there is plenty of rework needed to make the app work kind of, but not 
-on the level specified in the requirements as well as design and far beneath the expected outcome. If no rework would 
-be done and iterating over each problem, than the app would not work at all, not a single action, just a plain page.
+The package.json file contains many old dependencies by default (React 18 instead of 19, Expo 48 instead of 54), some of which are even incompatible and 42 high vulnerabilities. This could only be resolved manually. After installation, the project could not compile, got warnings because of many incompatible versions which might not work together as well as a red error page that modules are missing. After multiple tries the app finally started, was ugly and not working at all. Many prompts and several trail and error rounds later the design looked better and you could finally add a transaction, which is opened in a new page, does not store the amount and no category can be chosen (still buggy). Even though development should be finished, there is plenty of rework needed to make the app work kind of, but not on the level specified in the requirements as well as design and far beneath the expected outcome. If no rework would be done and iterating over each problem, than the app would not work at all, not a single action, just a plain page. 
 
-After about 50 prompt iterations by testing and telling what to fix, the app looks like a buggy prototype instead of
-a non-working empty app, but far from a finance-tracker which could be deployed productively. Additionally tests and 
-a Github Actions workflow was added.
+After about 50 prompt iterations by testing and telling what to fix, the app looks like a buggy prototype instead of a non-working empty app, but far from a finance-tracker which could be deployed productively. Additionally tests and a Github Actions workflow were added.
 
 ### Conclusion for the BMAD Approach
 The BMAD approach, while structured, revealed significant challenges in the implementation phase, particularly with the developer agent's adherence to requirements and specifications. The iterative process, though beneficial, often led to confusion and misalignment with the project's goals. Manual intervention and prompting were crucial in steering the development back on track, highlighting the need for clearer communication and more robust planning tools. Especially in terms of setting up 
 a project with up-to-date dependencies and compatible versions and ensuring the generated code meets the defined requirements and quality standards, the AI agents struggled to deliver satisfactory results without extensive human oversight.
 
-AI is very helpful in generating ideas, creating initial drafts, and providing suggestions. However, for complex projects requiring precise implementation and adherence to specific requirements, the current state of AI tools may not yet be sufficient to fully automate the development process without significant human intervention. In my opinion, a developer might not be as faster but would definitely produce higher quality work which actually meets the requirements and design specifications.
+AI is very helpful in generating ideas, creating initial drafts, and providing suggestions. However, for complex projects requiring precise implementation and adherence to specific requirements, the current state of AI tools may not yet be sufficient to fully automate the development process without significant human intervention. In my opinion, a developer might not be as fast but would definitely produce higher quality work which actually meets the requirements and design specifications.
 
 ---
 
