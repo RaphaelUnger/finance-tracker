@@ -50,20 +50,23 @@ describe('models type definitions', () => {
         it('should create transaction with required fields', () => {
             const tx: Transaction = {
                 id: 'tx-123',
-                amountCents: 1500,
+                title: 'Test Transaction',
+                amount: 1500,
                 date: '2024-06-15',
                 createdAt: '2024-06-15T10:00:00Z'
             };
 
             expect(tx.id).toBe('tx-123');
-            expect(tx.amountCents).toBe(1500);
+            expect(tx.title).toBe('Test Transaction');
+            expect(tx.amount).toBe(1500);
             expect(tx.date).toBe('2024-06-15');
         });
 
         it('should create transaction with all optional fields', () => {
             const tx: Transaction = {
                 id: 'tx-456',
-                amountCents: 5000,
+                title: 'Dinner',
+                amount: 5000,
                 date: '2024-07-20',
                 category: 'Food',
                 merchant: 'Restaurant',
@@ -84,7 +87,8 @@ describe('models type definitions', () => {
         it('should allow null recurrence', () => {
             const tx: Transaction = {
                 id: 'tx-789',
-                amountCents: 2000,
+                title: 'Recurring Payment',
+                amount: 2000,
                 date: '2024-08-01',
                 createdAt: '2024-08-01T00:00:00Z',
                 recurrence: null

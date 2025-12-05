@@ -1,70 +1,168 @@
-// Lightweight receipt parser heuristics: extract total amount, date, merchant from OCR text.
-export type ReceiptSuggestion = {
-    title?: string; // merchant
-    amount?: number; // in cents
-    date?: string; // YYYY-MM-DD
-    rawText?: string;
-};
+// ============================================================================
+// Types
+// ============================================================================
 
-function findAmount(text: string): number | undefined {
-    // find all money-like patterns and pick the largest value (heuristic)
-    const moneyRe = /\b(?:€|EUR|USD|\$)?\s?([0-9]+(?:[.,][0-9]{1,2})?)\b/g;
-    let m: RegExpExecArray | null;
-    const vals: number[] = [];
-    while ((m = moneyRe.exec(text)) !== null) {
-        const s = m[1].replace(',', '.');
-        const n = parseFloat(s);
-        if (Number.isFinite(n)) vals.push(n);
-    }
-    if (vals.length === 0) return undefined;
-    const max = Math.max(...vals);
-    return Math.round(max * 100);
+/**
+ * Extracted data from receipt OCR text
+ */
+export interface ReceiptSuggestion {
+    /** Merchant name extracted from receipt */
+    title?: string;
+    /** Amount in cents */
+    amount?: number;
+    /** Date in YYYY-MM-DD format */
+    date?: string;
+    /** Original OCR text */
+    rawText?: string;
 }
 
-function findDate(text: string): string | undefined {
-    // common date patterns: YYYY-MM-DD, DD/MM/YYYY, DD.MM.YYYY, MM/DD/YYYY
-    const iso = text.match(/\b(\d{4}-\d{2}-\d{2})\b/);
-    if (iso) return iso[1];
-    const dmy = text.match(/\b(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\b/);
-    if (dmy) {
-        const parts = dmy[1].split(/[\/\.\-]/).map(p => p.padStart(2, '0'));
-        // try to normalize: if year is last and has 4 digits assume DMY or MDY ambiguity default to DMY
-        if (parts[2].length === 4) {
-            const [p1, p2, p3] = parts;
-            // try to build YYYY-MM-DD assuming DMY
-            return `${p3}-${p2}-${p1}`;
-        } else {
-            // two-digit year -> prefix 20
-            const [p1, p2, p3] = parts;
-            return `20${p3}-${p2}-${p1}`;
+// ============================================================================
+// Amount Extraction
+// ============================================================================
+
+/** Pattern to match currency amounts (supports €, EUR, USD, $) */
+const MONEY_PATTERN = /\b(?:€|EUR|USD|\$)?\s?([0-9]+(?:[.,][0-9]{1,2})?)\b/g;
+
+/**
+ * Extract the likely total amount from receipt text.
+ * Uses heuristic: largest value found is typically the total.
+ */
+function findAmount(text: string): number | undefined {
+    const values: number[] = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = MONEY_PATTERN.exec(text)) !== null) {
+        const normalized = match[1].replace(',', '.');
+        const value = parseFloat(normalized);
+        if (Number.isFinite(value)) {
+            values.push(value);
         }
     }
+
+    if (values.length === 0) return undefined;
+
+    const maxValue = Math.max(...values);
+    return Math.round(maxValue * 100);
+}
+
+// ============================================================================
+// Date Extraction
+// ============================================================================
+
+/** ISO date pattern: YYYY-MM-DD */
+const ISO_DATE_PATTERN = /\b(\d{4}-\d{2}-\d{2})\b/;
+
+/** Common date patterns: DD/MM/YYYY, DD.MM.YYYY, MM/DD/YYYY */
+const COMMON_DATE_PATTERN = /\b(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\b/;
+
+/**
+ * Normalize a date string to YYYY-MM-DD format
+ */
+function normalizeDateParts(parts: string[]): string {
+    const [p1, p2, p3] = parts.map(p => p.padStart(2, '0'));
+
+    // If year has 4 digits, assume DMY format
+    if (p3.length === 4) {
+        return `${p3}-${p2}-${p1}`;
+    }
+
+    // Two-digit year: prefix with 20
+    return `20${p3}-${p2}-${p1}`;
+}
+
+/**
+ * Extract a date from receipt text
+ */
+function findDate(text: string): string | undefined {
+    // Try ISO format first
+    const isoMatch = text.match(ISO_DATE_PATTERN);
+    if (isoMatch) return isoMatch[1];
+
+    // Try common formats
+    const commonMatch = text.match(COMMON_DATE_PATTERN);
+    if (commonMatch) {
+        const parts = commonMatch[1].split(/[\/\.\-]/);
+        return normalizeDateParts(parts);
+    }
+
     return undefined;
 }
 
+// ============================================================================
+// Merchant Extraction
+// ============================================================================
+
+/** Keywords to skip when looking for merchant name */
+const SKIP_KEYWORDS = /receipt|invoice|total|vat|tax/i;
+
+/** Maximum number of lines to search for merchant */
+const MAX_MERCHANT_SEARCH_LINES = 5;
+
+/** Merchant name length constraints */
+const MIN_MERCHANT_LENGTH = 3;
+const MAX_MERCHANT_LENGTH = 80;
+
+/**
+ * Extract the merchant name from receipt text.
+ * Heuristic: merchant is often on one of the first non-header lines.
+ */
 function findMerchant(text: string): string | undefined {
-    // Heuristic: merchant often occurs on the first non-empty line and is short.
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const lines = text
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
+
     if (lines.length === 0) return undefined;
-    // skip lines that look like headers or totals
-    for (let i = 0; i < Math.min(5, lines.length); i++) {
-        const l = lines[i];
-        if (/receipt|invoice|total|vat|tax/i.test(l)) continue;
-        if (l.length > 2 && l.length < 80) return l;
+
+    // Search first few lines for a suitable merchant name
+    const searchLimit = Math.min(MAX_MERCHANT_SEARCH_LINES, lines.length);
+    for (let i = 0; i < searchLimit; i++) {
+        const line = lines[i];
+
+        // Skip header/total lines
+        if (SKIP_KEYWORDS.test(line)) continue;
+
+        // Accept lines within length constraints
+        if (line.length >= MIN_MERCHANT_LENGTH && line.length < MAX_MERCHANT_LENGTH) {
+            return line;
+        }
     }
+
+    // Fallback to first line
     return lines[0];
 }
 
+// ============================================================================
+// Main Parser
+// ============================================================================
+
+/**
+ * Parse OCR text from a receipt and extract structured data
+ */
 export function parseReceiptText(text: string): ReceiptSuggestion {
-    const raw = text || '';
-    const suggestion: ReceiptSuggestion = { rawText: raw };
-    const amt = findAmount(raw);
-    if (amt !== undefined) suggestion.amount = amt;
-    const dt = findDate(raw);
-    if (dt) suggestion.date = dt;
-    const m = findMerchant(raw);
-    if (m) suggestion.title = m;
+    const rawText = text || '';
+    const suggestion: ReceiptSuggestion = { rawText };
+
+    const amount = findAmount(rawText);
+    if (amount !== undefined) {
+        suggestion.amount = amount;
+    }
+
+    const date = findDate(rawText);
+    if (date) {
+        suggestion.date = date;
+    }
+
+    const merchant = findMerchant(rawText);
+    if (merchant) {
+        suggestion.title = merchant;
+    }
+
     return suggestion;
 }
+
+// ============================================================================
+// Default Export
+// ============================================================================
 
 export default { parseReceiptText };

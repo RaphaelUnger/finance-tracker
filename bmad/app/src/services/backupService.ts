@@ -1,95 +1,221 @@
-import { TransactionService } from './transactionService';
+import { TransactionService, Transaction } from './transactionService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CryptoJS from 'crypto-js';
 
-const BACKUP_KEY = 'ft_backup_v1';
+// ============================================================================
+// Types
+// ============================================================================
 
-// Envelope format (JSON string):
-// {
-//   version: 1,
-//   kdf: { salt: hex, iterations: number },
-//   iv: hex,
-//   ciphertext: base64,
-//   hmac: hex // HMAC-SHA256 of ciphertext using derived key
-// }
+/** Backup envelope structure for encrypted storage */
+interface BackupEnvelope {
+    version: number;
+    kdf: {
+        salt: string;
+        iterations: number;
+    };
+    iv: string;
+    ciphertext: string;
+    hmac: string;
+}
 
-const DEFAULT_PBKDF2_ITER = 10000;
+/** Backup payload containing exported data */
+interface BackupPayload {
+    exportedAt: string;
+    transactions: Transaction[];
+}
 
-function hexToWordArray(hex: string) {
+/** Result of a restore operation */
+export interface RestoreResult {
+    created: number;
+    errors: number;
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const STORAGE_KEY = 'ft_backup_v1';
+const BACKUP_VERSION = 1;
+const DEFAULT_PBKDF2_ITERATIONS = 10000;
+const KEY_SIZE_BITS = 256;
+
+// ============================================================================
+// Crypto Helpers
+// ============================================================================
+
+// Note: Using 'any' for CryptoJS WordArray as the library doesn't export proper types
+type WordArray = ReturnType<typeof CryptoJS.lib.WordArray.random>;
+
+/**
+ * Convert hex string to CryptoJS WordArray
+ */
+function hexToWordArray(hex: string): WordArray {
     return CryptoJS.enc.Hex.parse(hex);
 }
 
-export async function createBackup(password: string, iterations: number = DEFAULT_PBKDF2_ITER): Promise<string> {
+/**
+ * Derive an encryption key using PBKDF2
+ */
+function deriveKey(password: string, salt: WordArray, iterations: number): WordArray {
+    return CryptoJS.PBKDF2(password, salt, {
+        keySize: KEY_SIZE_BITS / 32,
+        iterations
+    });
+}
+
+/**
+ * Encrypt data with AES and return the ciphertext as base64
+ */
+function encryptData(plaintext: string, key: WordArray, iv: WordArray): string {
+    const encrypted = CryptoJS.AES.encrypt(plaintext, key, { iv });
+    return CryptoJS.enc.Base64.stringify(encrypted.ciphertext);
+}
+
+/**
+ * Decrypt AES ciphertext
+ */
+function decryptData(ciphertext: string, key: WordArray, iv: WordArray): string {
+    const cipherParams = CryptoJS.lib.CipherParams.create({
+        ciphertext: CryptoJS.enc.Base64.parse(ciphertext)
+    });
+    const decrypted = CryptoJS.AES.decrypt(cipherParams, key, { iv });
+    return decrypted.toString(CryptoJS.enc.Utf8);
+}
+
+/**
+ * Compute HMAC-SHA256 for integrity verification
+ */
+function computeHmac(data: string, key: WordArray): string {
+    return CryptoJS.HmacSHA256(data, key).toString(CryptoJS.enc.Hex);
+}
+
+// ============================================================================
+// Backup Creation
+// ============================================================================
+
+/**
+ * Create an encrypted backup of all transactions
+ */
+export async function createBackup(
+    password: string,
+    iterations: number = DEFAULT_PBKDF2_ITERATIONS
+): Promise<string> {
     const svc = await TransactionService.getInstanceAsync();
     const all = await svc.list();
-    const payload = JSON.stringify({ exportedAt: new Date().toISOString(), transactions: all });
 
+    const payload: BackupPayload = {
+        exportedAt: new Date().toISOString(),
+        transactions: all
+    };
+    const plaintext = JSON.stringify(payload);
+
+    // Generate random salt and IV
     const salt = CryptoJS.lib.WordArray.random(16);
     const iv = CryptoJS.lib.WordArray.random(16);
-    const key = CryptoJS.PBKDF2(password, salt, { keySize: 256 / 32, iterations });
 
-    const encrypted = CryptoJS.AES.encrypt(payload, key, { iv });
-    const ciphertext = CryptoJS.enc.Base64.stringify(encrypted.ciphertext);
+    // Derive key and encrypt
+    const key = deriveKey(password, salt, iterations);
+    const ciphertext = encryptData(plaintext, key, iv);
 
-    // HMAC for integrity
-    const hmac = CryptoJS.HmacSHA256(ciphertext, key).toString(CryptoJS.enc.Hex);
+    // Create HMAC for integrity
+    const hmac = computeHmac(ciphertext, key);
 
-    const envelope = {
-        version: 1,
-        kdf: { salt: salt.toString(CryptoJS.enc.Hex), iterations },
+    const envelope: BackupEnvelope = {
+        version: BACKUP_VERSION,
+        kdf: {
+            salt: salt.toString(CryptoJS.enc.Hex),
+            iterations
+        },
         iv: iv.toString(CryptoJS.enc.Hex),
         ciphertext,
         hmac
     };
+
     return JSON.stringify(envelope);
 }
 
+/**
+ * Save an encrypted backup to AsyncStorage
+ */
 export async function saveBackupToStorage(password: string): Promise<void> {
     const encrypted = await createBackup(password);
-    await AsyncStorage.setItem(BACKUP_KEY, encrypted);
+    await AsyncStorage.setItem(STORAGE_KEY, encrypted);
 }
 
+/**
+ * Retrieve the stored backup from AsyncStorage
+ */
 export async function getBackupFromStorage(): Promise<string | null> {
-    return AsyncStorage.getItem(BACKUP_KEY);
+    return AsyncStorage.getItem(STORAGE_KEY);
 }
 
-export async function restoreFromEncrypted(envelopeJson: string, password: string): Promise<{ created: number; errors: number }> {
-    let envelope: any;
+// ============================================================================
+// Backup Restoration
+// ============================================================================
+
+/**
+ * Parse and validate the backup envelope
+ */
+function parseEnvelope(envelopeJson: string): BackupEnvelope {
+    let envelope: BackupEnvelope;
     try {
         envelope = JSON.parse(envelopeJson);
-    } catch (e) {
+    } catch {
         throw new Error('Invalid backup envelope');
     }
-    if (!envelope || envelope.version !== 1) throw new Error('Unsupported backup version');
-    const saltHex = envelope.kdf?.salt;
-    const iterations = envelope.kdf?.iterations || DEFAULT_PBKDF2_ITER;
-    const ivHex = envelope.iv;
-    const ciphertext = envelope.ciphertext;
-    const hmac = envelope.hmac;
-    if (!saltHex || !ivHex || !ciphertext || !hmac) throw new Error('Invalid backup envelope');
 
-    const salt = hexToWordArray(saltHex);
+    if (!envelope || envelope.version !== BACKUP_VERSION) {
+        throw new Error('Unsupported backup version');
+    }
+
+    const { kdf, iv, ciphertext, hmac } = envelope;
+    if (!kdf?.salt || !iv || !ciphertext || !hmac) {
+        throw new Error('Invalid backup envelope');
+    }
+
+    return envelope;
+}
+
+/**
+ * Restore transactions from an encrypted backup
+ */
+export async function restoreFromEncrypted(
+    envelopeJson: string,
+    password: string
+): Promise<RestoreResult> {
+    const envelope = parseEnvelope(envelopeJson);
+    const { kdf, iv: ivHex, ciphertext, hmac } = envelope;
+    const iterations = kdf.iterations || DEFAULT_PBKDF2_ITERATIONS;
+
+    // Derive key
+    const salt = hexToWordArray(kdf.salt);
     const iv = hexToWordArray(ivHex);
-    const key = CryptoJS.PBKDF2(password, salt, { keySize: 256 / 32, iterations });
+    const key = deriveKey(password, salt, iterations);
 
-    // verify HMAC
-    const expectedHmac = CryptoJS.HmacSHA256(ciphertext, key).toString(CryptoJS.enc.Hex);
-    if (expectedHmac !== hmac) throw new Error('Invalid password or corrupted backup (HMAC mismatch)');
+    // Verify HMAC
+    const expectedHmac = computeHmac(ciphertext, key);
+    if (expectedHmac !== hmac) {
+        throw new Error('Invalid password or corrupted backup (HMAC mismatch)');
+    }
 
-    // decrypt
+    // Decrypt and parse
     try {
-        const cipherParams = CryptoJS.lib.CipherParams.create({ ciphertext: CryptoJS.enc.Base64.parse(ciphertext) });
-        const decrypted = CryptoJS.AES.decrypt(cipherParams, key, { iv });
-        const plain = decrypted.toString(CryptoJS.enc.Utf8);
-        if (!plain) throw new Error('Decryption failed');
-        const parsed = JSON.parse(plain);
-        const txs: any[] = parsed.transactions || [];
+        const plain = decryptData(ciphertext, key, iv);
+        if (!plain) {
+            throw new Error('Decryption failed');
+        }
+
+        const parsed: BackupPayload = JSON.parse(plain);
+        const transactions = parsed.transactions || [];
+
+        // Restore transactions
         const svc = await TransactionService.getInstanceAsync();
         let created = 0;
         let errors = 0;
-        for (const t of txs) {
+
+        for (const t of transactions) {
             try {
-                const input: any = {
+                await svc.create({
                     title: t.title || 'Restored',
                     amount: t.amount,
                     date: t.date,
@@ -98,19 +224,30 @@ export async function restoreFromEncrypted(envelopeJson: string, password: strin
                     notes: t.notes,
                     recurrence: t.recurrence || null,
                     generatedFrom: t.generatedFrom || null,
-                    generatedAt: t.generatedAt || null,
-                    createdAt: t.createdAt
-                };
-                await svc.create(input);
+                    generatedAt: t.generatedAt || null
+                });
                 created++;
-            } catch (e) {
+            } catch {
                 errors++;
             }
         }
+
         return { created, errors };
     } catch (e) {
+        if (e instanceof Error && e.message.includes('HMAC')) {
+            throw e;
+        }
         throw new Error('Invalid password or corrupted backup');
     }
 }
 
-export default { createBackup, saveBackupToStorage, getBackupFromStorage, restoreFromEncrypted };
+// ============================================================================
+// Default Export
+// ============================================================================
+
+export default {
+    createBackup,
+    saveBackupToStorage,
+    getBackupFromStorage,
+    restoreFromEncrypted
+};

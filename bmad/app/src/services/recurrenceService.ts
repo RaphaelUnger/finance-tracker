@@ -1,94 +1,204 @@
 import { addDays, addWeeks, addMonths, addYears, isBefore, parseISO, format } from 'date-fns';
-import { TransactionService } from './transactionService';
+import { TransactionService, Transaction } from './transactionService';
 import type { Recurrence } from './models';
 
+// ============================================================================
+// Constants
+// ============================================================================
+
+/** Default number of days to look ahead when generating occurrences */
+const DEFAULT_LOOKAHEAD_DAYS = 30;
+
+/** Date format for storing/comparing dates */
+const DATE_FORMAT = 'yyyy-MM-dd';
+
+// ============================================================================
+// Date Calculation Helpers
+// ============================================================================
+
+/**
+ * Get the date addition function for a given frequency
+ */
+function getDateAddFn(frequency: string): (date: Date, amount: number) => Date {
+    switch (frequency) {
+        case 'daily': return addDays;
+        case 'weekly': return addWeeks;
+        case 'monthly': return addMonths;
+        case 'yearly': return addYears;
+        default: return addMonths;
+    }
+}
+
+/**
+ * Calculate the next occurrence date for a recurrence rule
+ */
 export function nextOccurrence(fromDate: string, recurrence: Recurrence): string {
     const d = parseISO(fromDate);
     const interval = recurrence.interval && recurrence.interval > 0 ? recurrence.interval : 1;
-    switch (recurrence.frequency) {
-        case 'daily': return format(addDays(d, interval), 'yyyy-MM-dd');
-        case 'weekly': return format(addWeeks(d, interval), 'yyyy-MM-dd');
-        case 'monthly': return format(addMonths(d, interval), 'yyyy-MM-dd');
-        case 'yearly': return format(addYears(d, interval), 'yyyy-MM-dd');
-        default: return format(addMonths(d, interval), 'yyyy-MM-dd');
-    }
+    const addFn = getDateAddFn(recurrence.frequency);
+    return format(addFn(d, interval), DATE_FORMAT);
 }
 
-// Compute occurrences starting from a given start date (inclusive/exclusive) up to windowEnd (YYYY-MM-DD).
-export function computeOccurrences(startISO: string, recurrence: Recurrence, windowEndISO: string): string[] {
+// ============================================================================
+// Occurrence Computation
+// ============================================================================
+
+/**
+ * Check if a date is before or equal to an end date (inclusive)
+ */
+function isBeforeOrEqual(date: Date, endDate: Date): boolean {
+    return isBefore(date, addDays(endDate, 1));
+}
+
+/**
+ * Compute all occurrence dates from a start date up to a window end date
+ */
+export function computeOccurrences(
+    startISO: string,
+    recurrence: Recurrence,
+    windowEndISO: string
+): string[] {
     const results: string[] = [];
-    let cur = startISO;
-    const end = parseISO(windowEndISO);
-    // Use recurrence.nextRun if present and after start
-    if (recurrence.nextRun) {
-        cur = recurrence.nextRun;
-    }
+    let cur = recurrence.nextRun || startISO;
+    const windowEnd = parseISO(windowEndISO);
+    const ruleEndDate = recurrence.endDate ? parseISO(recurrence.endDate) : null;
+
     while (true) {
         const curDate = parseISO(cur);
-        if (!isBefore(curDate, addDays(end, 1))) {
+
+        // Stop if past window end
+        if (!isBeforeOrEqual(curDate, windowEnd)) {
             break;
         }
-        // if endDate set and cur > endDate, stop
-        if (recurrence.endDate) {
-            const ed = parseISO(recurrence.endDate);
-            if (!isBefore(curDate, addDays(ed, 1))) break;
+
+        // Stop if past rule end date
+        if (ruleEndDate && !isBeforeOrEqual(curDate, ruleEndDate)) {
+            break;
         }
-        results.push(format(curDate, 'yyyy-MM-dd'));
-        // advance
+
+        results.push(format(curDate, DATE_FORMAT));
         cur = nextOccurrence(cur, recurrence);
     }
+
     return results;
 }
 
-// Runner: materialize occurrences for all recurring rules within the next `days` days.
-export async function runGenerator(days = 30) {
+// ============================================================================
+// Generator Functions
+// ============================================================================
+
+/**
+ * Check if an occurrence already exists (either by generatedFrom or by matching title/amount/date)
+ */
+function occurrenceExists(
+    existingList: Transaction[],
+    sourceId: string,
+    occDate: string,
+    title: string,
+    amount: number
+): boolean {
+    // Primary check: explicit link via generatedFrom
+    const byGeneratedFrom = existingList.find(
+        x => x.generatedFrom === sourceId && x.date === occDate
+    );
+    if (byGeneratedFrom) return true;
+
+    // Fallback check: matching title, amount, and date
+    const byMatch = existingList.find(
+        x => x.date === occDate && x.title === title && x.amount === amount
+    );
+    return !!byMatch;
+}
+
+/**
+ * Materialize occurrences for all recurring rules within the specified window
+ */
+export async function runGenerator(days = DEFAULT_LOOKAHEAD_DAYS): Promise<number> {
     const svc = await TransactionService.getInstanceAsync();
     const all = await svc.list();
     const today = new Date();
-    const windowEnd = format(addDays(today, days), 'yyyy-MM-dd');
+    const windowEnd = format(addDays(today, days), DATE_FORMAT);
     let created = 0;
 
     for (const t of all) {
         if (!t.recurrence) continue;
+
         const sourceId = t.id;
-        // compute occurrences starting from either t.recurrence.nextRun or t.date
         const start = t.recurrence.nextRun || t.date;
-        const occ = computeOccurrences(start, t.recurrence, windowEnd);
-        for (const occDate of occ) {
-            // Avoid duplicates: prefer checking generatedFrom; otherwise fallback to title+amount+date
+        const occurrences = computeOccurrences(start, t.recurrence, windowEnd);
+
+        for (const occDate of occurrences) {
+            // Check for existing occurrence
             const existingList = await svc.list();
-            const existing = existingList.find(x => x.generatedFrom === sourceId && x.date === occDate);
-            if (existing) continue;
-            const fallback = existingList.find(x => x.date === occDate && x.title === t.title && x.amount === t.amount);
-            if (fallback) continue;
-            await svc.create({ title: t.title, amount: t.amount, date: occDate, generatedFrom: sourceId, generatedAt: new Date().toISOString() });
+            if (occurrenceExists(existingList, sourceId, occDate, t.title, t.amount)) {
+                continue;
+            }
+
+            // Create the new occurrence
+            await svc.create({
+                title: t.title,
+                amount: t.amount,
+                date: occDate,
+                generatedFrom: sourceId,
+                generatedAt: new Date().toISOString()
+            });
             created++;
-            // advance nextRun on rule to the next occurrence after occDate
+
+            // Advance nextRun to the next occurrence
             const next = nextOccurrence(occDate, t.recurrence);
-            const updatedRec = { ...t.recurrence, nextRun: next } as Recurrence;
+            const updatedRec: Recurrence = { ...t.recurrence, nextRun: next };
             try {
                 await svc.update(t.id, { recurrence: updatedRec });
-            } catch (e) {
-                // ignore update errors
+            } catch {
+                // Ignore update errors
             }
         }
     }
+
     return created;
 }
 
-// rollback: remove generated instances for a given recurrence rule id
-export async function rollbackGeneratedFor(ruleId: string, restoreNextRun?: string | null) {
+/**
+ * Remove all generated instances for a given recurrence rule
+ */
+export async function rollbackGeneratedFor(
+    ruleId: string,
+    restoreNextRun?: string | null
+): Promise<void> {
     const svc = await TransactionService.getInstanceAsync();
     const all = await svc.list();
+
+    // Delete all transactions generated from this rule
     const toDelete = all.filter(t => t.generatedFrom === ruleId);
     for (const d of toDelete) {
-        try { await svc.delete(d.id); } catch (e) { /* ignore */ }
+        try {
+            await svc.delete(d.id);
+        } catch {
+            // Ignore delete errors
+        }
     }
+
+    // Optionally restore the nextRun value
     if (restoreNextRun) {
         try {
-            await svc.update(ruleId, { recurrence: { ...((await svc.get(ruleId))?.recurrence || {}), nextRun: restoreNextRun } as Recurrence });
-        } catch (e) { /* ignore */ }
+            const rule = await svc.get(ruleId);
+            if (rule?.recurrence) {
+                const updatedRec: Recurrence = { ...rule.recurrence, nextRun: restoreNextRun };
+                await svc.update(ruleId, { recurrence: updatedRec });
+            }
+        } catch {
+            // Ignore update errors
+        }
     }
 }
 
-export default { computeOccurrences, runGenerator, nextOccurrence };
+// ============================================================================
+// Default Export
+// ============================================================================
+
+export default {
+    computeOccurrences,
+    runGenerator,
+    nextOccurrence,
+    rollbackGeneratedFor
+};
